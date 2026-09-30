@@ -318,7 +318,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
         // STEP 1: DISCORD OAUTH2 CREDENTIALS
@@ -339,45 +339,44 @@
           measurementId: "G-5YSR0DR1L6"
         };
 
-        const appId = 'yachiyo-dashboard-app'; // Used for keeping database paths organized
+        const appId = 'yachiyo-dashboard-app';
         let app, db, auth, currentUser, currentServerId;
 
-        // Mock Server Data for the Dashboard (simulating a Discord API /users/@me/guilds fetch)
         const mockServers = [
             { id: '109823476', name: 'Anime Hangout', icon: 'AH', color: 'from-blue-500 to-purple-600' },
             { id: '982734628', name: 'Genshin Impact PH', icon: 'GI', color: 'from-green-400 to-blue-500' },
             { id: '564738291', name: 'Yachiyo Dev Server', icon: 'YD', color: 'from-pink-500 to-orange-400' }
         ];
 
-        // Initialize App Functions
         async function initApp() {
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                // Set up UI listeners
                 setupUI();
                 
-                // Check if the user is returning from the Discord Login page
-                const fragment = new URLSearchParams(window.location.hash.slice(1));
-                const accessToken = fragment.get('access_token');
+                // Fixed Token Parser
+                const hash = window.location.hash.substring(1);
+                const params = new URLSearchParams(hash);
+                const accessToken = params.get('access_token');
 
                 if (accessToken) {
-                    // Sign in to Firebase so they can save data
                     await signInAnonymously(auth);
                     
                     onAuthStateChanged(auth, async (user) => {
                         if (user) {
                             currentUser = user;
                             
-                            // Let's fetch their real Discord username to display it!
                             try {
                                 const response = await fetch('https://discord.com/api/users/@me', {
                                     headers: { authorization: `Bearer ${accessToken}` }
                                 });
                                 const discordUser = await response.json();
                                 document.getElementById('display-user-id').textContent = discordUser.username;
+                                if (discordUser.avatar) {
+                                    document.getElementById('display-user-avatar').src = `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`;
+                                }
                             } catch (e) {
                                 document.getElementById('display-user-id').textContent = 'Admin';
                             }
@@ -386,7 +385,6 @@
                             renderServerList();
                             showView('servers');
                             
-                            // Clean up the URL so the access token is hidden
                             window.history.replaceState(null, null, window.location.pathname);
                         }
                     });
@@ -396,7 +394,6 @@
             }
         }
 
-        // --- AUTH FLOW ---
         window.loginWithDiscord = () => {
             const btn = document.querySelector('#view-login button');
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Redirecting...';
@@ -415,7 +412,6 @@
             }
         }
 
-        // --- VIEW MANAGEMENT ---
         window.showView = (viewName) => {
             document.getElementById('view-login').classList.add('hidden');
             document.getElementById('view-servers').classList.add('hidden');
@@ -449,20 +445,15 @@
             });
         };
 
-        // --- CONFIGURATION LOGIC ---
         window.selectServer = async (server) => {
             currentServerId = server.id;
             
-            // Update UI with server info
             document.getElementById('active-server-name').textContent = server.name;
             const iconDiv = document.getElementById('active-server-icon');
             iconDiv.className = `w-10 h-10 rounded-[0.5rem] bg-gradient-to-br ${server.color} flex items-center justify-center text-white font-bold`;
             iconDiv.textContent = server.icon;
             
-            // Default to Confession Tab
             switchTab('confession');
-            
-            // Load data from Firebase
             await loadServerConfig(server.id);
             
             showView('dashboard');
@@ -472,14 +463,12 @@
             if (!currentUser) return;
             
             try {
-                // Rule 1: Strict paths for user-specific data
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'serverConfigs', serverId);
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     
-                    // Populate Confession
                     if (data.confession) {
                         document.getElementById('confess-channel').value = data.confession.channelId || '';
                         document.getElementById('confess-count').value = data.confession.startCount || '1';
@@ -487,20 +476,17 @@
                         document.getElementById('preview-count').textContent = data.confession.startCount || '1';
                     }
                     
-                    // Populate Economy
                     if (data.economy) {
                         document.getElementById('econ-symbol').value = data.economy.symbol || '';
                         document.getElementById('econ-start-bal').value = data.economy.startBalance || '0';
                     }
                     
-                    // Populate Audit
                     if (data.audit) {
                         document.getElementById('audit-channel').value = data.audit.channelId || '';
                         document.getElementById('audit-msg-del').checked = data.audit.logMessageDeletes || false;
                         document.getElementById('audit-member').checked = data.audit.logMemberJoins || false;
                     }
                 } else {
-                    // Reset to defaults if no config exists
                     document.getElementById('confess-channel').value = '';
                     document.getElementById('confess-count').value = '1';
                     document.getElementById('confess-log-toggle').checked = false;
@@ -519,7 +505,6 @@
         window.saveConfiguration = async () => {
             if (!currentUser || !currentServerId) return;
 
-            // Gather data from inputs
             const configData = {
                 confession: {
                     channelId: document.getElementById('confess-channel').value,
@@ -539,7 +524,6 @@
             };
 
             try {
-                // Rule 1: Strict Paths
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'serverConfigs', currentServerId);
                 await setDoc(docRef, configData, { merge: true });
                 
@@ -550,7 +534,6 @@
             }
         };
 
-        // --- UI HELPERS ---
         const panelData = {
             'confession': { title: 'Confession Service', desc: 'Manage anonymous confessions routing and count logic.' },
             'economy': { title: 'Global Economy', desc: 'Setup server currency, starting balances, and shop toggles.' },
@@ -559,7 +542,6 @@
         };
 
         window.switchTab = (tabId) => {
-            // Update Sidebar Styling
             document.querySelectorAll('.dashboard-tab').forEach(el => {
                 el.classList.remove('bg-gray-700/50', 'text-white');
                 el.classList.add('text-discord-muted', 'hover:bg-gray-800');
@@ -568,15 +550,12 @@
             activeTab.classList.remove('text-discord-muted', 'hover:bg-gray-800');
             activeTab.classList.add('bg-gray-700/50', 'text-white');
 
-            // Hide all panels
             document.querySelectorAll('.settings-panel').forEach(el => {
                 el.classList.add('hidden');
             });
 
-            // Show target panel
             document.getElementById(`panel-${tabId}`).classList.remove('hidden');
             
-            // Update Headers
             document.getElementById('panel-title').textContent = panelData[tabId].title;
             document.getElementById('panel-desc').textContent = panelData[tabId].desc;
         };
@@ -596,24 +575,20 @@
                 toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span id="toast-message">${message}</span>`;
             }
 
-            // Animate In
             toast.classList.remove('translate-x-full', 'opacity-0');
             
-            // Auto hide
             setTimeout(() => {
                 toast.classList.add('translate-x-full', 'opacity-0');
             }, 3000);
         };
 
         function setupUI() {
-            // Live preview for confession count
             const countInput = document.getElementById('confess-count');
             countInput.addEventListener('input', (e) => {
                 document.getElementById('preview-count').textContent = e.target.value || '1';
             });
         }
 
-        // Start app
         initApp();
     </script>
 </body>
