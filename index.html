@@ -330,7 +330,8 @@
                 
                 const hash = window.location.hash.substring(1);
                 const params = new URLSearchParams(hash);
-                discordAccessToken = params.get('access_token');
+                discordAccessToken = params.get('access_token') || sessionStorage.getItem('yachiyo_discord_access_token');
+                if (discordAccessToken) sessionStorage.setItem('yachiyo_discord_access_token', discordAccessToken);
 
                 if (discordAccessToken) {
                     await signInAnonymously(auth);
@@ -379,6 +380,8 @@
             if (auth) {
                 await signOut(auth);
                 currentUser = null;
+                discordAccessToken = null;
+                sessionStorage.removeItem('yachiyo_discord_access_token');
                 document.getElementById('user-profile').classList.add('hidden');
                 showView('login');
             }
