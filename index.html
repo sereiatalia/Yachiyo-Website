@@ -494,23 +494,12 @@
                 setupUI();
                 
                 const params = new URLSearchParams(window.location.search);
-                const oauthCode = params.get('code');
-                if (oauthCode) {
-                    const tokenResponse = await fetch(`${BOT_API_URL}/api/auth/discord/token`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: oauthCode }) });
-                    const tokenPayload = await tokenResponse.json();
-                    if (!tokenResponse.ok) throw new Error(tokenPayload.error || 'Discord login could not be completed.');
-                    discordAccessToken = tokenPayload.access_token;
+                const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                discordAccessToken = hashParams.get('access_token') || sessionStorage.getItem('yachiyo_discord_access_token');
+                if (hashParams.get('access_token')) {
                     sessionStorage.setItem('yachiyo_discord_access_token', discordAccessToken);
-                    if (tokenPayload.refresh_token) sessionStorage.setItem('yachiyo_discord_refresh_token', tokenPayload.refresh_token);
-                    sessionStorage.setItem('yachiyo_discord_token_expires_at', String(Date.now() + (tokenPayload.expires_in || 604800) * 1000));
+                    sessionStorage.setItem('yachiyo_discord_token_expires_at', String(Date.now() + (Number(hashParams.get('expires_in')) || 604800) * 1000));
                     window.history.replaceState(null, null, window.location.pathname);
-                } else {
-                    discordAccessToken = sessionStorage.getItem('yachiyo_discord_access_token');
-                }
-                if (discordAccessToken && !sessionStorage.getItem('yachiyo_discord_refresh_token') && !oauthCode) {
-                    sessionStorage.removeItem('yachiyo_discord_access_token');
-                    sessionStorage.removeItem('yachiyo_discord_token_expires_at');
-                    discordAccessToken = null;
                 }
 
                 if (discordAccessToken) {
@@ -577,7 +566,7 @@
             btn.disabled = true;
 
             // Notice we included 'guilds' scope here so we can fetch your real servers!
-            const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds&prompt=consent`;
+            const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds`;
             window.location.href = oauthUrl;
         };
 
