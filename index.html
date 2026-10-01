@@ -150,6 +150,17 @@
         .toggle-label { background: #e8bfd1 !important; }
         .toggle-checkbox:checked + .toggle-label { background: var(--berry) !important; }
         #toast { background: var(--berry) !important; color: #ffffff !important; }
+        .audit-viewer-card { background: #ffffff !important; border: 2px solid #f4bfd5 !important; box-shadow: 0 10px 26px rgba(232,95,145,.08); }
+        .audit-viewer-intro { padding-bottom: 18px; border-bottom: 1px dashed #f2c5d7; }
+        .audit-kicker { display: inline-flex; gap: 8px; align-items: center; color: #d94d82; font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+        .audit-event { min-width: 0; padding: 16px 18px; background: #fff6fa; border: 1px solid #f2c5d7; border-left: 5px solid #e85f91; border-radius: 15px; box-shadow: 0 4px 12px rgba(232,95,145,.06); }
+        .audit-event-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .audit-event-type { color: #7c56bd; font-size: .95rem; font-weight: 800; overflow-wrap: anywhere; }
+        .audit-event-top time { color: #806070; font-size: .78rem; }
+        .audit-event-meta { display: flex; gap: 16px; flex-wrap: wrap; color: #806070; font-size: .78rem; margin-top: 8px; }
+        .audit-event-meta i { color: #e85f91; margin-right: 4px; }
+        .audit-event pre { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #17131a; background: #ffffff; border: 1px solid #f4d5e1; border-radius: 10px; padding: 12px; margin-top: 12px; font: .76rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
+        .audit-empty { padding: 24px; text-align: center; color: #806070; background: #fff6fa; border: 1px dashed #efb3c9; border-radius: 14px; }
         ::-webkit-scrollbar-track { background: #fff0f6; }
         ::-webkit-scrollbar-thumb { background: #efa0bb; }
         ::-webkit-scrollbar-thumb:hover { background: var(--berry); }
@@ -260,7 +271,7 @@
                             <p class="text-discord-muted text-sm mt-1" id="panel-desc">Manage anonymous confessions routing and count logic.</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="saveConfiguration()" class="bg-discord-green hover:bg-green-600 text-white px-5 py-2 rounded-[3px] font-medium transition-colors shadow-md flex items-center gap-2">
+                            <button id="save-header-button" onclick="saveConfiguration()" class="bg-discord-green hover:bg-green-600 text-white px-5 py-2 rounded-[3px] font-medium transition-colors shadow-md flex items-center gap-2">
                                 <i class="fa-solid fa-floppy-disk"></i> Save Changes
                             </button>
                         </div>
@@ -434,9 +445,12 @@
                             </div>
                         </div>
                         <div id="panel-audit-viewer" class="settings-panel p-6 hidden">
-                            <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
-                                <h3 class="text-xl font-semibold text-white">Activity & Audit Logs</h3>
-                                <p class="text-discord-muted mt-2">Search recent Yachiyo activity for this server.</p>
+                            <div class="audit-viewer-card rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
+                                <div class="audit-viewer-intro">
+                                    <span class="audit-kicker"><i class="fa-solid fa-heart"></i> Yachiyo activity</span>
+                                    <h3 class="text-xl font-semibold text-white">Recent activity</h3>
+                                    <p class="text-discord-muted mt-2">Search configuration changes, moderation events, and server activity.</p>
+                                </div>
                                 <input id="audit-search" oninput="loadAuditLogs()" class="discord-input w-full p-2.5 rounded-[3px] text-sm mt-6" placeholder="Search event, user ID, target ID, or details...">
                                 <div id="audit-log-list" class="grid gap-3 mt-4">Loading logs…</div>
                             </div>
@@ -818,6 +832,8 @@
             const module = commandModules[tabId];
             const panel = document.getElementById(`panel-${tabId}`) || document.getElementById('panel-command');
             panel.classList.remove('hidden');
+            const saveButton = document.getElementById('save-header-button');
+            if (saveButton) saveButton.classList.toggle('hidden', ['dashboard', 'checklist', 'audit-viewer', 'commands', 'save-data'].includes(tabId));
             if (module) {
                 document.getElementById('command-panel-title').textContent = module.label;
                 document.getElementById('command-panel-description').textContent = module.description;
@@ -899,7 +915,7 @@
                     const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/audit-logs?search=${search}&limit=100`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
                     const payload = await response.json();
                     if (!response.ok) throw new Error(payload.error || 'Could not load audit logs.');
-                    target.innerHTML = payload.logs?.length ? payload.logs.map(log => `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3"><div class="flex flex-wrap items-center justify-between gap-2"><code class="text-blue-300">${log.event_type}</code><span class="text-xs text-discord-muted">${new Date(log.created_at).toLocaleString()}</span></div><p class="text-xs text-discord-muted mt-2">Actor: ${log.actor_user_id || 'system'} · Target: ${log.target_id || '—'}</p><pre class="text-xs text-gray-300 mt-2 whitespace-pre-wrap break-words">${JSON.stringify(log.data || {}, null, 2)}</pre></div>`).join('') : '<p class="text-discord-muted">No matching activity found.</p>';
+                    target.innerHTML = payload.logs?.length ? payload.logs.map(log => `<article class="audit-event"><div class="audit-event-top"><code class="audit-event-type">${log.event_type || 'activity'}</code><time>${new Date(log.created_at).toLocaleString()}</time></div><p class="audit-event-meta"><span><i class="fa-solid fa-user"></i> ${log.actor_user_id || 'system'}</span><span><i class="fa-solid fa-bullseye"></i> ${log.target_id || '—'}</span></p><pre>${JSON.stringify(log.data || {}, null, 2)}</pre></article>`).join('') : '<p class="audit-empty"><i class="fa-regular fa-heart"></i> No matching activity found.</p>';
                 } catch (error) { target.textContent = error.message; }
             }, 250);
         };
