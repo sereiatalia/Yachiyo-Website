@@ -309,7 +309,8 @@
                             <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
                                 <h3 class="text-xl font-semibold text-white">Yachiyo Commands</h3>
                                 <p class="text-discord-muted mt-2">Use these commands directly in your Discord server. Administrator commands require the appropriate Discord permissions.</p>
-                                <div id="all-commands-list" class="mt-6 grid gap-3"></div>
+                                <input id="command-search" oninput="filterCommands()" class="discord-input w-full p-2.5 rounded-[3px] text-sm mt-6" placeholder="Search commands...">
+                                <div id="all-commands-list" class="mt-4 grid gap-3"></div>
                             </div>
                         </div>
 
@@ -724,7 +725,7 @@
             } else {
                 document.getElementById('panel-title').textContent = panelData[tabId].title;
                 document.getElementById('panel-desc').textContent = panelData[tabId].desc;
-                if (tabId === 'commands') renderAllCommands();
+                if (tabId === 'commands') loadCommandGuide();
                 if (tabId === 'save-data') loadSaveDataOverview();
                 if (tabId === 'dashboard') loadLiveDashboard();
                 if (tabId === 'checklist') loadSetupChecklist();
@@ -734,8 +735,30 @@
         function renderAllCommands() {
             const target = document.getElementById('all-commands-list');
             const rows = Object.entries(commandModules).flatMap(([, module]) => module.commands.map(command => ({ command, category: module.label })));
-            target.innerHTML = rows.map(item => `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3"><div class="flex items-center justify-between gap-3"><code class="text-discord-blurple font-semibold">${item.command}</code><span class="text-xs text-discord-muted">${item.category}</span></div><p class="text-xs text-discord-muted mt-2">Run <code>${item.command}</code> in Discord. Use the command’s options or run <code>/help</code> for details.</p></div>`).join('');
+            target.innerHTML = rows.map(item => `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3 command-row" data-command="${item.command.toLowerCase()}" data-category="${item.category.toLowerCase()}"><div class="flex items-center justify-between gap-3"><code class="text-discord-blurple font-semibold">${item.command}</code><span class="text-xs text-discord-muted">${item.category}</span></div><p class="text-xs text-discord-muted mt-2">Run <code>${item.command}</code> in Discord. Use the command’s options or run <code>/help</code> for details.</p></div>`).join('');
         }
+
+        async function loadCommandGuide() {
+            if (!currentServerId || !discordAccessToken) return renderAllCommands();
+            const target = document.getElementById('all-commands-list');
+            try {
+                const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/commands`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error || 'Could not load command guide.');
+                target.innerHTML = payload.commands.map(command => {
+                    const options = (command.options || []).map(option => `${option.name}${option.required ? ' (required)' : ''}`).join(', ');
+                    const usage = `/${command.name}${options ? ' ' + options : ''}`;
+                    const admin = command.default_member_permissions ? 'Administrator permission required' : 'Available to members';
+                    return `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3 command-row" data-command="${command.name}" data-category="${admin.toLowerCase()}"><div class="flex items-center justify-between gap-3"><code class="text-discord-blurple font-semibold">${usage}</code><span class="text-xs text-discord-muted">${admin}</span></div><p class="text-sm text-gray-200 mt-2">${command.description || 'Yachiyo command.'}</p><p class="text-xs text-discord-muted mt-2">Example: <code>/${command.name}${options ? ' ' + options.split(', ').map(option => option.replace(' (required)', '')).map(option => option + ' ...').join(' ') : ''}</code></p></div>`;
+                }).join('');
+                filterCommands();
+            } catch (error) { target.innerHTML = `<p class="text-red-300">${error.message}</p>`; }
+        }
+
+        window.filterCommands = () => {
+            const query = document.getElementById('command-search').value.toLowerCase().trim();
+            document.querySelectorAll('.command-row').forEach(row => { row.classList.toggle('hidden', query && !row.dataset.command.includes(query) && !row.dataset.category.includes(query)); });
+        };
 
         async function loadLiveDashboard() {
             const target = document.getElementById('live-dashboard-data');
