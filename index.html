@@ -492,7 +492,7 @@
         const commandModules = {
             confession: { label: 'Confessions', icon: 'fa-envelope', color: 'text-pink-400', description: 'Configure anonymous confession routing and setup.', commands: ['/confession', '/confession-setup'] },
             'server-info': { label: 'Server Info', icon: 'fa-circle-info', color: 'text-cyan-400', description: 'Edit the live server information panel.', commands: ['/server-info', '/server-info-setup', '/server-info-edit', '/server-info-banner', '/server-info-staff', '/server-info-recount'] },
-            introduction: { label: 'Introduction', icon: 'fa-hand-wave', color: 'text-pink-400', description: 'Configure member introductions and reward roles.', commands: ['/introduction-setup', '/introduction-panel', '/introduction-template', '/introduction-status', '/introduction-reward-role', '/introduction-reward-cleanup'] },
+            introduction: { label: 'Introduction', icon: 'fa-hand-wave', color: 'text-pink-400', description: 'Configure member introductions, welcome messages, and reward roles.', commands: ['/introduction-setup', '/introduction-panel', '/introduction-template', '/introduction-status', '/introduction-reward-role', '/introduction-reward-cleanup', '/welcome-setup'] },
             rules: { label: 'Rules', icon: 'fa-book', color: 'text-amber-400', description: 'Manage the server rulebook and banner.', commands: ['/rules-setup', '/rules-panel', '/rules-edit', '/rules-banner'] },
             tickets: { label: 'Tickets', icon: 'fa-ticket', color: 'text-green-400', description: 'Configure private support tickets and staff access.', commands: ['/ticket-setup', '/ticket-role'] },
             'truth-or-dare': { label: 'Truth or Dare', icon: 'fa-dice', color: 'text-violet-400', description: 'Set up and refresh the Truth or Dare panel.', commands: ['/tod-setup', '/tod-panel'] },
@@ -500,7 +500,7 @@
             'temporary-voice': { label: 'Temporary Voice', icon: 'fa-microphone', color: 'text-blue-400', description: 'Configure Join to Create voice channels.', commands: ['/temp-vc-setup', '/temp-vc-panel', '/my-vc'] },
             'reaction-roles': { label: 'Reaction Roles', icon: 'fa-tags', color: 'text-rose-400', description: 'Create and manage unlimited reaction-role panels.', commands: ['/reaction-role panel', '/reaction-role setup'] },
             moderation: { label: 'Moderation', icon: 'fa-shield-halved', color: 'text-red-400', description: 'Configure filters, spam protection, warnings, and moderation actions.', commands: ['/curse-setup', '/curse', '/curse-list', '/curse-exempt-role', '/spam-setup', '/warn', '/warnings', '/kick', '/ban', '/timeout', '/purge', '/lock', '/unlock', '/unban', '/untimeout'] },
-            'audit-logs': { label: 'Audit Logs', icon: 'fa-clipboard-list', color: 'text-blue-400', description: 'Review and configure server activity logging.', commands: ['/logs', '/logs-category'] },
+            'audit-logs': { label: 'Audit Logs', icon: 'fa-clipboard-list', color: 'text-blue-400', description: 'Review and configure separate channels for each activity type.', commands: ['/logs', '/logs-category messages', '/logs-category message-deleted', '/logs-category message-edited', '/logs-category member-leave', '/logs-category kick', '/logs-category members', '/logs-category moderation', '/logs-category channels-and-roles', '/logs-category confessions'] },
             maintenance: { label: 'Maintenance', icon: 'fa-screwdriver-wrench', color: 'text-gray-300', description: 'Refresh panels, recover server data, and manage setup state.', commands: ['/refresh-panels', '/recover-server', '/role-guide', '/member-info'] }
         };
 
@@ -884,7 +884,7 @@
                 const payload = await response.json();
                 if (!response.ok) throw new Error(payload.error || 'Could not load command guide.');
                 target.innerHTML = payload.commands.map(command => {
-                    const options = (command.options || []).map(option => `${option.name}${option.required ? ' (required)' : ''}`).join(', ');
+                    const options = (command.options || []).map(option => { const choices = (option.choices || []).map(choice => choice.name || choice.value).join(' / '); return `${option.name}${choices ? `: ${choices}` : ''}${option.required ? ' (required)' : ''}`; }).join(', ');
                     const usage = `/${command.name}${options ? ' ' + options : ''}`;
                     const admin = command.default_member_permissions ? 'Administrator permission required' : 'Available to members';
                     return `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3 command-row" data-command="${command.name}" data-category="${admin.toLowerCase()}"><div class="flex items-center justify-between gap-3"><code class="text-discord-blurple font-semibold">${usage}</code><span class="text-xs text-discord-muted">${admin}</span></div><p class="text-sm text-gray-200 mt-2">${command.description || 'Yachiyo command.'}</p></div>`;
