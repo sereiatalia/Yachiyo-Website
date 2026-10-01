@@ -338,6 +338,14 @@
                             </div>
                         </div>
 
+                        <div id="panel-dashboard" class="settings-panel p-6 hidden">
+                            <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
+                                <h3 class="text-xl font-semibold text-white">Live Server Dashboard</h3>
+                                <p class="text-discord-muted mt-2">Current information from Discord and Yachiyo.</p>
+                                <div id="live-dashboard-data" class="grid gap-3 mt-6">Loading server information…</div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -575,7 +583,7 @@
             
             iconDiv.innerHTML = `<img src="${iconUrl}" class="w-full h-full object-cover">`;
             
-            switchTab('commands');
+            switchTab('dashboard');
             await loadServerConfig(server.id);
             
             showView('dashboard');
@@ -667,6 +675,7 @@
         };
 
         const panelData = {
+            dashboard: { title: 'Live Server Dashboard', desc: 'Current server and Yachiyo status from Discord.' },
             commands: { title: 'Commands', desc: 'Browse Yachiyo commands and how to use them in Discord.' },
             'save-data': { title: 'Save Data', desc: 'Export, import, and inspect this server’s saved data.' },
             'server-info': { title: 'Server Info', desc: 'Edit the live server information panel managed by Yachiyo.' },
@@ -703,6 +712,7 @@
                 document.getElementById('panel-desc').textContent = panelData[tabId].desc;
                 if (tabId === 'commands') renderAllCommands();
                 if (tabId === 'save-data') loadSaveDataOverview();
+                if (tabId === 'dashboard') loadLiveDashboard();
             }
         };
 
@@ -710,6 +720,18 @@
             const target = document.getElementById('all-commands-list');
             const rows = Object.entries(commandModules).flatMap(([, module]) => module.commands.map(command => ({ command, category: module.label })));
             target.innerHTML = rows.map(item => `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3"><div class="flex items-center justify-between gap-3"><code class="text-discord-blurple font-semibold">${item.command}</code><span class="text-xs text-discord-muted">${item.category}</span></div><p class="text-xs text-discord-muted mt-2">Run <code>${item.command}</code> in Discord. Use the command’s options or run <code>/help</code> for details.</p></div>`).join('');
+        }
+
+        async function loadLiveDashboard() {
+            const target = document.getElementById('live-dashboard-data');
+            if (!target || !currentServerId || !discordAccessToken) return;
+            try {
+                const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/dashboard`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Could not load live dashboard.');
+                const missing = data.yachiyo.missingPermissions;
+                target.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-3"><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Status</div><div class="text-lg font-semibold ${data.status === 'online' ? 'text-green-400' : 'text-yellow-300'}">${data.status}</div></div><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Members</div><div class="text-lg font-semibold text-white">${data.server.memberCount}</div></div><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Roles</div><div class="text-lg font-semibold text-white">${data.roles.total}</div></div></div><div class="rounded bg-gray-900/60 p-4 text-sm text-gray-200"><p><strong>Channels:</strong> ${data.channels.total} total · ${data.channels.text} text · ${data.channels.voice} voice</p><p class="mt-2"><strong>Yachiyo permissions:</strong> ${data.yachiyo.permissions.length} granted</p>${missing.length ? `<p class="mt-3 text-red-300"><strong>Missing permissions:</strong> ${missing.join(', ')}</p>` : '<p class="mt-3 text-green-300">All recommended permissions are available.</p>'}</div>`;
+            } catch (error) { target.textContent = error.message; }
         }
 
         async function loadSaveDataOverview() {
@@ -817,7 +839,7 @@
         function setupUI() {
             const navigation = document.querySelector('aside .p-3');
             navigation.innerHTML = '<div class="text-xs font-bold text-discord-muted uppercase tracking-wider mb-2 mt-4 px-2">Server Workspace</div>';
-            [['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400']].forEach(([id, label, icon, color], index) => {
+            [['dashboard', 'Live Dashboard', 'fa-chart-line', 'text-cyan-400'], ['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400']].forEach(([id, label, icon, color], index) => {
                 const button = document.createElement('button');
                 button.id = `tab-${id}`;
                 button.className = `dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium ${index === 0 ? 'bg-gray-700/50 text-white' : 'text-discord-muted'} hover:bg-gray-800 hover:text-discord-text transition-colors`;
