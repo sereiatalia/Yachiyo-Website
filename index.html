@@ -561,16 +561,15 @@
                         `;
                     } else {
                         // SERVER DOES NOT HAVE YACHIYO
-                        card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 opacity-60 cursor-default grid grid-cols-[auto_1fr_auto] items-center gap-4";
+                        card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 opacity-60 cursor-default flex items-center gap-4";
                         
                         card.innerHTML = `
                             <img src="${iconUrl}" class="w-14 h-14 min-w-[3.5rem] shrink-0 rounded-full object-cover grayscale" style="width:56px;height:56px;min-width:56px;" alt="Server Icon">
                             <div>
                                 <h3 class="font-bold text-gray-400 truncate w-48">${server.name}</h3>
                                 <p class="text-xs text-discord-muted mt-1">ID: ${server.id}</p>
-                                <span class="inline-block mt-1 text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30">Yachiyo is not here</span>
                             </div>
-                            <div class="justify-self-center">
+                            <div class="ml-auto shrink-0">
                                 <button onclick="event.stopPropagation(); inviteBot('${server.id}')" class="text-xs font-medium bg-discord-blurple hover:bg-discord-blurple-hover text-white px-4 py-2 rounded transition-colors shadow-sm">
                                     Invite
                                 </button>
