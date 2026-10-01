@@ -741,8 +741,10 @@
         };
 
         window.restoreBackup = async (snapshotId) => {
-            if (!confirm('Restore this backup? Existing records for this server will be replaced.')) return;
             const backup = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/backups/${snapshotId}`, { headers: { Authorization: `Bearer ${discordAccessToken}` } }).then(response => response.json());
+            const validation = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/validate-import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) }).then(response => response.json());
+            if (!validation.valid) return showToast((validation.errors || ['Backup validation failed.']).join(' '), true);
+            if (!confirm(`Backup validated: ${validation.totalRecords} records across ${validation.tables.filter(table => table.records).length} tables.\n\nRestore it? Existing records will be replaced.`)) return;
             const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) });
             const result = await response.json();
             if (!response.ok) return showToast(result.error || 'Restore failed.', true);
@@ -783,9 +785,12 @@
             const file = event.target.files?.[0];
             event.target.value = '';
             if (!file || !currentServerId || !discordAccessToken) return;
-            if (!confirm('Importing will replace this server’s existing saved records in the new database. Continue?')) return;
             try {
                 const backup = JSON.parse(await file.text());
+                const validationResponse = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/validate-import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) });
+                const validation = await validationResponse.json();
+                if (!validation.valid) throw new Error((validation.errors || ['Backup validation failed.']).join(' '));
+                if (!confirm(`Backup validated: ${validation.totalRecords} records across ${validation.tables.filter(table => table.records).length} tables.\n\nImporting will replace this server’s existing records. Continue?`)) return;
                 const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) });
                 const result = await response.json();
                 if (!response.ok) throw new Error(result.error || 'Import failed.');
