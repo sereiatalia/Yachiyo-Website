@@ -113,6 +113,46 @@
             #view-servers .grid { grid-template-columns: 1fr !important; padding: 12px !important; }
             #view-servers h2 { font-size: 1.6rem; }
         }
+
+        /* Full strawberry-bunny palette: white, blush pink, lavender and black. */
+        :root { --berry: #e85f91; --berry-dark: #c93f70; --cream: #fffafd; --ink: #17131a; --lavender: #d9c8ff; --mint: #f7c9dc; --strawberry-light: #fff0f6; --line: #f4bfd5; }
+        html, body { background: #fffafd !important; color: #17131a !important; }
+        body::before { content: '♡  🍓  ♡  🐰  ♡  🍓  ♡'; position: fixed; inset: 0 0 auto; z-index: 0; height: 30px; padding: 5px 24px; color: #ef9bbb; background: #fff0f6; letter-spacing: 18px; font-size: 13px; pointer-events: none; }
+        nav { margin-top: 30px; background: #ffffff !important; border-bottom: 2px solid var(--line) !important; box-shadow: 0 5px 18px rgba(232,95,145,.12) !important; color: #17131a !important; }
+        nav span, nav .text-white, nav .text-discord-text, nav .text-discord-muted { color: #17131a !important; }
+        main, #view-login, #view-servers, #view-dashboard, #view-dashboard > div:last-child { background: #fffafd !important; color: #17131a !important; }
+        aside { background: #fff0f6 !important; border-color: var(--line) !important; }
+        aside .bg-gray-700\/50, aside .dashboard-tab.bg-gray-700\/50 { background: #f8c9dc !important; color: #17131a !important; box-shadow: inset 4px 0 #e85f91; }
+        aside button:hover { background: #ffe0ec !important; color: #17131a !important; }
+        aside .text-discord-muted, aside .text-gray-400 { color: #806070 !important; }
+        .bg-discord-dark, .bg-discord-darker, .bg-discord-darkest { background-color: #ffffff !important; color: #17131a !important; }
+        .bg-discord-darker, .bg-gray-800\/30, .bg-gray-900\/60 { background: #fff5f9 !important; border-color: var(--line) !important; box-shadow: 0 8px 24px rgba(232,95,145,.10); }
+        .text-white, .text-gray-200, .text-gray-300, .text-gray-400, .text-discord-text { color: #17131a !important; }
+        .text-discord-muted { color: #806070 !important; }
+        .text-discord-blurple, .text-cyan-400, .text-blue-400, .text-purple-400, .text-violet-400 { color: #8e62c9 !important; }
+        .text-pink-400, .text-rose-400, .text-red-300, .text-green-300, .text-green-400, .text-yellow-300 { color: #d94d82 !important; }
+        .bg-discord-blurple, .bg-discord-green { background-color: var(--berry) !important; color: #ffffff !important; }
+        .bg-discord-blurple:hover, .hover\:bg-discord-blurple-hover:hover, .bg-green-600:hover, .bg-indigo-600:hover { background-color: var(--berry-dark) !important; }
+        .border-gray-800, .border-gray-700\/50, .border-gray-700, .border-gray-600 { border-color: var(--line) !important; }
+        .discord-input { background: #ffffff !important; color: #17131a !important; border: 2px solid #f1bfd3 !important; }
+        .discord-input::placeholder { color: #b27b91 !important; }
+        .discord-input:focus { border-color: var(--berry) !important; box-shadow: 0 0 0 4px rgba(232,95,145,.16); }
+        button { color: #17131a; }
+        button.bg-discord-blurple, button.bg-discord-green, #view-login button { color: #ffffff !important; border-radius: 999px !important; }
+        .rounded-xl, .rounded-lg { border-radius: 22px !important; }
+        .shadow-lg, .shadow-2xl { box-shadow: 0 12px 30px rgba(211,74,127,.16) !important; }
+        #view-login > div, #view-servers .grid > div { border-color: var(--line) !important; }
+        #view-login > div { background: #ffffff !important; position: relative; overflow: hidden; }
+        #view-login > div::before { content: '🍓  🐰  🍓'; display: block; color: #ef8eae; font-size: 18px; letter-spacing: 8px; margin-bottom: 10px; }
+        #view-login h1, #view-servers h2, #panel-title, .settings-panel h3, .settings-panel h4 { color: #17131a !important; }
+        #view-servers .grid > div { background: #ffffff !important; border: 2px solid #f4d0df !important; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        #view-servers .grid > div:hover { transform: translateY(-4px) rotate(-.3deg); border-color: #e85f91 !important; box-shadow: 0 12px 24px rgba(232,95,145,.17); }
+        .toggle-label { background: #e8bfd1 !important; }
+        .toggle-checkbox:checked + .toggle-label { background: var(--berry) !important; }
+        #toast { background: var(--berry) !important; color: #ffffff !important; }
+        ::-webkit-scrollbar-track { background: #fff0f6; }
+        ::-webkit-scrollbar-thumb { background: #efa0bb; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--berry); }
     </style>
 </head>
 <body class="antialiased h-screen flex flex-col">
