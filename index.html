@@ -367,12 +367,13 @@
         };
 
         // Fetch user's real servers and check bot presence
+// Updated Server Fetching Logic (Dynamic Bot Detection)
         async function fetchUserServers() {
             const container = document.getElementById('server-list');
             container.innerHTML = '<p class="text-discord-muted col-span-3 text-center py-8"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your servers...</p>';
 
             try {
-                // 1. Fetch guilds user has permissions in (Administrator or Manage Server)
+                // 1. Fetch user's managed guilds from Discord
                 const guildsRes = await fetch('https://discord.com/api/users/@me/guilds', {
                     headers: { authorization: `Bearer ${discordAccessToken}` }
                 });
@@ -383,10 +384,8 @@
                     return;
                 }
 
-                // Filter servers where user is Administrator (permissions bitmask check or admin flag)
-                // Discord admin permission flag is 0x8
+                // Filter for Admin / Manage Server permissions
                 const managedGuilds = guilds.filter(g => (g.permissions & 0x8) === 0x8 || g.owner);
-
                 container.innerHTML = '';
 
                 if (managedGuilds.length === 0) {
@@ -394,30 +393,62 @@
                     return;
                 }
 
-                managedGuilds.forEach(server => {
-                    // Note: In client-side JS without a bot token backend, we list the servers you manage.
-                    // To check if Yachiyo is explicitly in it, we render the card. 
-                    // If you want to restrict it completely, you can check bot presence via your bot backend, 
-                    // but here we let you click any server you manage!
-                    const card = document.createElement('div');
-                    card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 hover:border-discord-blurple cursor-pointer transition-all hover:-translate-y-1 group flex items-center gap-4";
-                    card.onclick = () => selectServer(server);
+                // 2. Fetch the Bot's active servers from Firebase
+                let activeBotServers = [];
+                try {
+                    const botInfoRef = doc(db, 'system', 'botInfo');
+                    const botInfoSnap = await getDoc(botInfoRef);
+                    if (botInfoSnap.exists() && botInfoSnap.data().activeServers) {
+                        activeBotServers = botInfoSnap.data().activeServers;
+                    }
+                } catch (fbErr) {
+                    console.error("Could not fetch bot servers from Firebase:", fbErr);
+                }
 
+                // 3. Render the UI dynamically
+                managedGuilds.forEach(server => {
+                    // Check dynamically against the Firebase array
+                    const isBotInServer = activeBotServers.includes(server.id);
+                    const card = document.createElement('div');
+                    
                     let iconUrl = server.icon 
                         ? `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png` 
                         : `https://placehold.co/100x100/5865F2/FFFFFF?text=${server.name.charAt(0)}`;
 
-                    card.innerHTML = `
-                        <img src="${iconUrl}" class="w-14 h-14 rounded-full object-cover shadow-lg group-hover:rounded-xl transition-all duration-300" alt="Server Icon">
-                        <div>
-                            <h3 class="font-bold text-white truncate w-48">${server.name}</h3>
-                            <p class="text-xs text-discord-muted mt-1">ID: ${server.id}</p>
-                            <span class="inline-block mt-1 text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded">Manageable</span>
-                        </div>
-                        <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                            <i class="fa-solid fa-chevron-right text-discord-blurple"></i>
-                        </div>
-                    `;
+                    if (isBotInServer) {
+                        // SERVER HAS YACHIYO
+                        card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 hover:border-discord-blurple cursor-pointer transition-all hover:-translate-y-1 group flex items-center gap-4";
+                        card.onclick = () => selectServer(server);
+                        
+                        card.innerHTML = `
+                            <img src="${iconUrl}" class="w-14 h-14 rounded-full object-cover shadow-lg group-hover:rounded-xl transition-all duration-300" alt="Server Icon">
+                            <div>
+                                <h3 class="font-bold text-white truncate w-48">${server.name}</h3>
+                                <p class="text-xs text-discord-muted mt-1">ID: ${server.id}</p>
+                                <span class="inline-block mt-1 text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded border border-green-500/30">Manageable</span>
+                            </div>
+                            <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fa-solid fa-chevron-right text-discord-blurple"></i>
+                            </div>
+                        `;
+                    } else {
+                        // SERVER DOES NOT HAVE YACHIYO
+                        card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 opacity-60 cursor-default flex items-center gap-4";
+                        
+                        card.innerHTML = `
+                            <img src="${iconUrl}" class="w-14 h-14 rounded-full object-cover grayscale" alt="Server Icon">
+                            <div>
+                                <h3 class="font-bold text-gray-400 truncate w-48">${server.name}</h3>
+                                <p class="text-xs text-discord-muted mt-1">ID: ${server.id}</p>
+                                <span class="inline-block mt-1 text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30">Yachiyo is not here</span>
+                            </div>
+                            <div class="ml-auto">
+                                <button onclick="inviteBot('${server.id}')" class="text-xs font-medium bg-discord-blurple hover:bg-discord-blurple-hover text-white px-3 py-1.5 rounded transition-colors shadow-sm">
+                                    Invite
+                                </button>
+                            </div>
+                        `;
+                    }
                     container.appendChild(card);
                 });
 
@@ -426,7 +457,7 @@
                 container.innerHTML = '<p class="text-discord-red col-span-3 text-center">Error loading your servers from Discord.</p>';
             }
         }
-
+        
         window.selectServer = async (server) => {
             currentServerId = server.id;
             
