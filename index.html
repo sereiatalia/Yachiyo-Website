@@ -74,6 +74,45 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Strawberry bunny theme */
+        :root { --berry: #e98eae; --berry-dark: #c96f93; --cream: #fff9fc; --ink: #5d4b58; --lavender: #d9c8f2; --mint: #c9eadf; }
+        body { background: var(--cream) !important; color: var(--ink) !important; font-family: 'Inter', 'Trebuchet MS', sans-serif; }
+        nav { background: linear-gradient(90deg, #fff0f6, #fffafd) !important; border-bottom: 1px solid #f3c6d8 !important; box-shadow: 0 3px 16px rgba(194, 111, 147, .12) !important; }
+        nav span, nav .text-white { color: #8e5872 !important; }
+        main, #view-login, #view-servers, #view-dashboard { background: #fffafd !important; }
+        aside { background: #fff3f8 !important; border-color: #f3d4e1 !important; }
+        aside .bg-gray-700\/50 { background: #f7cfe0 !important; color: #8d4d6c !important; }
+        aside button:hover { background: #fde2ed !important; color: #8d4d6c !important; }
+        .bg-discord-dark, .bg-discord-darker, .bg-discord-darkest { background-color: #fffafd !important; }
+        .bg-discord-darker { border-color: #f2d7e2 !important; box-shadow: 0 8px 24px rgba(214, 139, 169, .10); }
+        .text-white, .text-gray-200 { color: #604d5b !important; }
+        .text-discord-muted, .text-gray-400 { color: #a17f91 !important; }
+        .text-discord-blurple { color: #c87598 !important; }
+        .bg-discord-blurple { background-color: var(--berry) !important; }
+        .bg-discord-blurple:hover, .hover\:bg-discord-blurple-hover:hover { background-color: var(--berry-dark) !important; }
+        .bg-discord-green { background-color: #83c9ad !important; }
+        .border-gray-800, .border-gray-700\/50 { border-color: #f1d4e0 !important; }
+        .discord-input { background: #fff !important; color: var(--ink) !important; border: 1px solid #ecc6d6 !important; border-radius: 12px !important; }
+        .discord-input:focus { border-color: var(--berry) !important; box-shadow: 0 0 0 3px rgba(233, 142, 174, .18); }
+        .rounded-xl, .rounded-lg { border-radius: 18px !important; }
+        .bg-gray-900\/60 { background: #fff5f9 !important; border: 1px solid #f5dbe6; }
+        .shadow-lg, .shadow-2xl { box-shadow: 0 10px 28px rgba(203, 111, 148, .14) !important; }
+        ::-webkit-scrollbar-track { background: #fff1f7; }
+        ::-webkit-scrollbar-thumb { background: #efb3c9; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--berry); }
+        #view-login h1::after, #panel-title::after { content: '  ♡'; color: var(--berry); }
+        @media (max-width: 700px) {
+            nav { padding-left: 14px !important; padding-right: 14px !important; }
+            nav .text-sm { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+            #view-dashboard { flex-direction: column !important; overflow-y: auto !important; }
+            #view-dashboard aside { width: 100% !important; height: auto !important; max-height: 190px; }
+            #view-dashboard aside .p-3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+            #view-dashboard aside .p-3 > div { grid-column: 1 / -1; }
+            #view-dashboard > div:last-child { padding: 16px !important; min-height: 70vh; }
+            #view-servers .grid { grid-template-columns: 1fr !important; padding: 12px !important; }
+            #view-servers h2 { font-size: 1.6rem; }
+        }
     </style>
 </head>
 <body class="antialiased h-screen flex flex-col">
