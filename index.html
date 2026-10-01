@@ -291,6 +291,18 @@
                             </div>
                         </div>
 
+                        <div id="panel-command" class="settings-panel p-6 hidden">
+                            <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
+                                <h3 id="command-panel-title" class="text-xl font-semibold text-white"></h3>
+                                <p id="command-panel-description" class="text-discord-muted mt-2"></p>
+                                <div class="mt-6">
+                                    <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3">Yachiyo commands</h4>
+                                    <div id="command-panel-commands" class="grid gap-2"></div>
+                                </div>
+                                <p class="text-xs text-discord-muted mt-6">This dashboard is being connected to Yachiyo’s PostgreSQL settings. Every save action will use the same service used by the Discord command.</p>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -306,6 +318,19 @@
         const CLIENT_ID = '1521501985193463888'; 
         const REDIRECT_URI = 'https://sereiatalia.github.io/Yachiyo-Website/';
         const BOT_API_URL = 'https://yachiyo-app-production-f510.up.railway.app';
+        const commandModules = {
+            'server-info': { label: 'Server Info', icon: 'fa-circle-info', color: 'text-cyan-400', description: 'Edit the live server information panel.', commands: ['/server-info', '/server-info-setup', '/server-info-edit', '/server-info-banner', '/server-info-staff', '/server-info-recount'] },
+            introduction: { label: 'Introduction', icon: 'fa-hand-wave', color: 'text-pink-400', description: 'Configure member introductions and reward roles.', commands: ['/introduction-setup', '/introduction-panel', '/introduction-template', '/introduction-status', '/introduction-reward-role', '/introduction-reward-cleanup'] },
+            rules: { label: 'Rules', icon: 'fa-book', color: 'text-amber-400', description: 'Manage the server rulebook and banner.', commands: ['/rules-setup', '/rules-panel', '/rules-edit', '/rules-banner'] },
+            tickets: { label: 'Tickets', icon: 'fa-ticket', color: 'text-green-400', description: 'Configure private support tickets and staff access.', commands: ['/ticket-setup', '/ticket-role'] },
+            'truth-or-dare': { label: 'Truth or Dare', icon: 'fa-dice', color: 'text-violet-400', description: 'Set up and refresh the Truth or Dare panel.', commands: ['/tod-setup', '/tod-panel'] },
+            'auto-reactions': { label: 'Auto-Reactions', icon: 'fa-face-smile', color: 'text-yellow-400', description: 'Configure automatic reactions in channels.', commands: ['/auto-react-setup', '/auto-react-list', '/auto-react-clear'] },
+            'temporary-voice': { label: 'Temporary Voice', icon: 'fa-microphone', color: 'text-blue-400', description: 'Configure Join to Create voice channels.', commands: ['/temp-vc-setup', '/temp-vc-panel', '/my-vc'] },
+            'reaction-roles': { label: 'Reaction Roles', icon: 'fa-tags', color: 'text-rose-400', description: 'Create and manage unlimited reaction-role panels.', commands: ['/reaction-role panel', '/reaction-role setup'] },
+            moderation: { label: 'Moderation', icon: 'fa-shield-halved', color: 'text-red-400', description: 'Configure filters, spam protection, warnings, and moderation actions.', commands: ['/curse-setup', '/curse', '/curse-list', '/curse-exempt-role', '/spam-setup', '/warn', '/warnings', '/kick', '/ban', '/timeout', '/purge', '/lock', '/unlock', '/unban', '/untimeout'] },
+            'audit-logs': { label: 'Audit Logs', icon: 'fa-clipboard-list', color: 'text-blue-400', description: 'Review and configure server activity logging.', commands: ['/logs', '/logs-category'] },
+            maintenance: { label: 'Maintenance', icon: 'fa-screwdriver-wrench', color: 'text-gray-300', description: 'Refresh panels, recover server data, and manage setup state.', commands: ['/refresh-panels', '/recover-server', '/role-guide', '/member-info'] }
+        };
 
         const firebaseConfig = {
           apiKey: "AIzaSyCmSaqy2Nh1lkTl0kfrJ9vjy9s_5yExECI",
@@ -625,10 +650,19 @@
             document.querySelectorAll('.settings-panel').forEach(el => {
                 el.classList.add('hidden');
             });
-
-            document.getElementById(`panel-${tabId}`).classList.remove('hidden');
-            document.getElementById('panel-title').textContent = panelData[tabId].title;
-            document.getElementById('panel-desc').textContent = panelData[tabId].desc;
+            const module = commandModules[tabId];
+            const panel = document.getElementById(`panel-${tabId}`) || document.getElementById('panel-command');
+            panel.classList.remove('hidden');
+            if (module) {
+                document.getElementById('command-panel-title').textContent = module.label;
+                document.getElementById('command-panel-description').textContent = module.description;
+                document.getElementById('command-panel-commands').innerHTML = module.commands.map(command => `<div class="rounded bg-gray-900/60 px-3 py-2 text-sm text-gray-200 font-mono">${command}</div>`).join('');
+                document.getElementById('panel-title').textContent = module.label;
+                document.getElementById('panel-desc').textContent = module.description;
+            } else {
+                document.getElementById('panel-title').textContent = panelData[tabId].title;
+                document.getElementById('panel-desc').textContent = panelData[tabId].desc;
+            }
         };
 
         window.showToast = (message, isError = false) => {
@@ -647,6 +681,16 @@
         };
 
         function setupUI() {
+            const navigation = document.querySelector('aside .p-3');
+            navigation.innerHTML = '<div class="text-xs font-bold text-discord-muted uppercase tracking-wider mb-2 mt-4 px-2">Yachiyo Services</div>';
+            Object.entries(commandModules).forEach(([id, module]) => {
+                const button = document.createElement('button');
+                button.id = `tab-${id}`;
+                button.className = 'dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium text-discord-muted hover:bg-gray-800 hover:text-discord-text transition-colors';
+                button.innerHTML = `<i class="fa-solid ${module.icon} ${module.color} w-5 text-center"></i> ${module.label}`;
+                button.onclick = () => switchTab(id);
+                navigation.appendChild(button);
+            });
             const countInput = document.getElementById('confess-count');
             countInput.addEventListener('input', (e) => {
                 document.getElementById('preview-count').textContent = e.target.value || '1';
