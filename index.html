@@ -466,6 +466,11 @@
             window.location.href = oauthUrl;
         };
 
+        window.inviteBot = (guildId) => {
+            const inviteUrl = `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&scope=bot%20applications.commands&permissions=0&guild_id=${encodeURIComponent(guildId)}&disable_guild_select=true`;
+            window.open(inviteUrl, '_blank', 'noopener,noreferrer');
+        };
+
         window.logout = async () => {
             if (auth) {
                 await signOut(auth);
@@ -555,7 +560,7 @@
                         `;
                     } else {
                         // SERVER DOES NOT HAVE YACHIYO
-                        card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 opacity-60 cursor-default flex items-center gap-4";
+                        card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 opacity-60 cursor-default grid grid-cols-[auto_1fr_auto] items-center gap-4";
                         
                         card.innerHTML = `
                             <img src="${iconUrl}" class="w-14 h-14 rounded-full object-cover grayscale" alt="Server Icon">
@@ -564,8 +569,8 @@
                                 <p class="text-xs text-discord-muted mt-1">ID: ${server.id}</p>
                                 <span class="inline-block mt-1 text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30">Yachiyo is not here</span>
                             </div>
-                            <div class="ml-auto">
-                                <button onclick="inviteBot('${server.id}')" class="text-xs font-medium bg-discord-blurple hover:bg-discord-blurple-hover text-white px-3 py-1.5 rounded transition-colors shadow-sm">
+                            <div class="justify-self-center">
+                                <button onclick="event.stopPropagation(); inviteBot('${server.id}')" class="text-xs font-medium bg-discord-blurple hover:bg-discord-blurple-hover text-white px-4 py-2 rounded transition-colors shadow-sm">
                                     Invite
                                 </button>
                             </div>
