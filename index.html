@@ -181,13 +181,6 @@
                             <p class="text-discord-muted text-sm mt-1" id="panel-desc">Manage anonymous confessions routing and count logic.</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="exportServerData()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-[3px] font-medium transition-colors shadow-md flex items-center gap-2">
-                                <i class="fa-solid fa-download"></i> Export Data
-                            </button>
-                            <button onclick="document.getElementById('import-backup-input').click()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-[3px] font-medium transition-colors shadow-md flex items-center gap-2">
-                                <i class="fa-solid fa-upload"></i> Import Data
-                            </button>
-                            <input id="import-backup-input" type="file" accept="application/json" class="hidden" onchange="importServerData(event)">
                             <button onclick="saveConfiguration()" class="bg-discord-green hover:bg-green-600 text-white px-5 py-2 rounded-[3px] font-medium transition-colors shadow-md flex items-center gap-2">
                                 <i class="fa-solid fa-floppy-disk"></i> Save Changes
                             </button>
@@ -309,6 +302,37 @@
                                     <div id="command-panel-data" class="grid gap-2 text-sm text-discord-muted">Loading server data…</div>
                                 </div>
                                 <p class="text-xs text-discord-muted mt-6">This dashboard is being connected to Yachiyo’s PostgreSQL settings. Every save action will use the same service used by the Discord command.</p>
+                            </div>
+                        </div>
+
+                        <div id="panel-commands" class="settings-panel p-6 hidden">
+                            <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
+                                <h3 class="text-xl font-semibold text-white">Yachiyo Commands</h3>
+                                <p class="text-discord-muted mt-2">Use these commands directly in your Discord server. Administrator commands require the appropriate Discord permissions.</p>
+                                <div id="all-commands-list" class="mt-6 grid gap-3"></div>
+                            </div>
+                        </div>
+
+                        <div id="panel-save-data" class="settings-panel p-6 hidden">
+                            <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6 space-y-6">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-white">Save Data</h3>
+                                    <p class="text-discord-muted mt-2">Protect this server’s Yachiyo data before moving to another Railway account.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-3">
+                                    <button onclick="exportServerData()" class="bg-discord-blurple hover:bg-indigo-600 text-white px-4 py-2 rounded-[3px] font-medium"><i class="fa-solid fa-download mr-2"></i>Export Backup</button>
+                                    <button onclick="document.getElementById('import-backup-input').click()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-[3px] font-medium"><i class="fa-solid fa-upload mr-2"></i>Import Backup</button>
+                                    <input id="import-backup-input" type="file" accept="application/json" class="hidden" onchange="importServerData(event)">
+                                </div>
+                                <div class="rounded bg-gray-900/60 p-4 text-sm text-discord-muted space-y-2">
+                                    <p><strong class="text-white">Export:</strong> downloads this server’s settings, counters, profiles, logs, panels, tickets, and other stored records as JSON.</p>
+                                    <p><strong class="text-white">Import:</strong> restores that JSON backup into a new Yachiyo database. It preserves confession counters and linked records.</p>
+                                    <p><strong class="text-white">Important:</strong> import only the backup for the selected server. Import replaces that server’s existing records.</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3">Current saved data</h4>
+                                    <div id="save-data-overview" class="grid gap-2 text-sm text-discord-muted">Select this section to load saved data.</div>
+                                </div>
                             </div>
                         </div>
 
@@ -549,7 +573,7 @@
             
             iconDiv.innerHTML = `<img src="${iconUrl}" class="w-full h-full object-cover">`;
             
-            switchTab('server-info');
+            switchTab('commands');
             await loadServerConfig(server.id);
             
             showView('dashboard');
@@ -641,6 +665,8 @@
         };
 
         const panelData = {
+            commands: { title: 'Commands', desc: 'Browse Yachiyo commands and how to use them in Discord.' },
+            'save-data': { title: 'Save Data', desc: 'Export, import, and inspect this server’s saved data.' },
             'server-info': { title: 'Server Info', desc: 'Edit the live server information panel managed by Yachiyo.' },
             'confession': { title: 'Confession Service', desc: 'Manage anonymous confessions routing and count logic.' },
             'economy': { title: 'Global Economy', desc: 'Setup server currency, starting balances, and shop toggles.' },
@@ -673,8 +699,29 @@
             } else {
                 document.getElementById('panel-title').textContent = panelData[tabId].title;
                 document.getElementById('panel-desc').textContent = panelData[tabId].desc;
+                if (tabId === 'commands') renderAllCommands();
+                if (tabId === 'save-data') loadSaveDataOverview();
             }
         };
+
+        function renderAllCommands() {
+            const target = document.getElementById('all-commands-list');
+            const rows = Object.entries(commandModules).flatMap(([, module]) => module.commands.map(command => ({ command, category: module.label })));
+            target.innerHTML = rows.map(item => `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3"><div class="flex items-center justify-between gap-3"><code class="text-discord-blurple font-semibold">${item.command}</code><span class="text-xs text-discord-muted">${item.category}</span></div><p class="text-xs text-discord-muted mt-2">Run <code>${item.command}</code> in Discord. Use the command’s options or run <code>/help</code> for details.</p></div>`).join('');
+        }
+
+        async function loadSaveDataOverview() {
+            const target = document.getElementById('save-data-overview');
+            if (!target || !currentServerId || !discordAccessToken) return;
+            target.textContent = 'Loading saved data…';
+            try {
+                const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/overview`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.error || 'Could not load saved data.');
+                const entries = Object.entries(payload.tables || {}).filter(([, rows]) => rows.length);
+                target.innerHTML = entries.length ? entries.map(([table, rows]) => `<div class="flex items-center justify-between rounded bg-gray-900/60 px-3 py-2"><span class="font-mono text-gray-200">${table}</span><span>${rows.length} record${rows.length === 1 ? '' : 's'}</span></div>`).join('') : '<p>No saved data exists for this server yet.</p>';
+            } catch (error) { target.textContent = error.message; }
+        }
 
         async function loadModuleData() {
             const target = document.getElementById('command-panel-data');
@@ -738,15 +785,16 @@
 
         function setupUI() {
             const navigation = document.querySelector('aside .p-3');
-            navigation.innerHTML = '<div class="text-xs font-bold text-discord-muted uppercase tracking-wider mb-2 mt-4 px-2">Yachiyo Services</div>';
-            Object.entries(commandModules).forEach(([id, module]) => {
+            navigation.innerHTML = '<div class="text-xs font-bold text-discord-muted uppercase tracking-wider mb-2 mt-4 px-2">Server Workspace</div>';
+            [['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400']].forEach(([id, label, icon, color], index) => {
                 const button = document.createElement('button');
                 button.id = `tab-${id}`;
-                button.className = 'dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium text-discord-muted hover:bg-gray-800 hover:text-discord-text transition-colors';
-                button.innerHTML = `<i class="fa-solid ${module.icon} ${module.color} w-5 text-center"></i> ${module.label}`;
+                button.className = `dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium ${index === 0 ? 'bg-gray-700/50 text-white' : 'text-discord-muted'} hover:bg-gray-800 hover:text-discord-text transition-colors`;
+                button.innerHTML = `<i class="fa-solid ${icon} ${color} w-5 text-center"></i> ${label}`;
                 button.onclick = () => switchTab(id);
                 navigation.appendChild(button);
             });
+            renderAllCommands();
             const countInput = document.getElementById('confess-count');
             countInput.addEventListener('input', (e) => {
                 document.getElementById('preview-count').textContent = e.target.value || '1';
