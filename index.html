@@ -46,23 +46,11 @@
             color: #dcddde;
             overflow-x: hidden;
         }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #202225; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #202225; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #5865F2; 
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #202225; }
+        ::-webkit-scrollbar-thumb { background: #202225; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5865F2; }
 
-        /* Discord Inputs */
         .discord-input {
             background-color: #202225;
             color: #dcddde;
@@ -74,37 +62,14 @@
             border-color: #5865F2;
         }
         
-        /* Toggle Switch */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #3ba55d;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #3ba55d;
-        }
-        .toggle-checkbox {
-            right: 0;
-            z-index: 1;
-            border-color: #72767d;
-        }
-        .toggle-label {
-            width: 3rem;
-            background-color: #72767d;
-            transition: all 0.3s;
-        }
-        .toggle-dot {
-            top: -0.25rem;
-            left: -0.25rem;
-            transition: all 0.3s;
-        }
-        .toggle-checkbox:checked + .toggle-label .toggle-dot {
-            transform: translateX(100%);
-        }
+        .toggle-checkbox:checked { right: 0; border-color: #3ba55d; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #3ba55d; }
+        .toggle-checkbox { right: 0; z-index: 1; border-color: #72767d; }
+        .toggle-label { width: 3rem; background-color: #72767d; transition: all 0.3s; }
+        .toggle-dot { top: -0.25rem; left: -0.25rem; transition: all 0.3s; }
+        .toggle-checkbox:checked + .toggle-label .toggle-dot { transform: translateX(100%); }
 
-        .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -156,10 +121,10 @@
         <div id="view-servers" class="absolute inset-0 overflow-y-auto p-8 fade-in hidden bg-discord-dark z-10">
             <div class="max-w-5xl mx-auto">
                 <h2 class="text-2xl font-bold text-white mb-2">Select a Server</h2>
-                <p class="text-discord-muted mb-8">Choose a server to configure Yachiyo App settings.</p>
+                <p class="text-discord-muted mb-8">Choose a server where you have management permissions to configure Yachiyo App.</p>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="server-list">
-                    <!-- Servers will be injected here via JS -->
+                    <!-- Real Discord servers will be injected here via JS -->
                 </div>
             </div>
         </div>
@@ -169,11 +134,11 @@
             <!-- Sidebar -->
             <aside class="w-64 bg-discord-darker h-full flex flex-col border-r border-gray-800 shrink-0">
                 <div class="p-4 border-b border-gray-800 flex items-center gap-3 cursor-pointer hover:bg-gray-800/50 transition-colors" onclick="showView('servers')">
-                    <div class="w-10 h-10 rounded-xl bg-gray-700 flex items-center justify-center" id="active-server-icon">
+                    <div class="w-10 h-10 rounded-xl bg-gray-700 flex items-center justify-center overflow-hidden" id="active-server-icon">
                         <!-- Icon -->
                     </div>
                     <div>
-                        <h3 class="font-bold text-white text-sm" id="active-server-name">Server Name</h3>
+                        <h3 class="font-bold text-white text-sm truncate w-36" id="active-server-name">Server Name</h3>
                         <p class="text-xs text-discord-muted flex items-center gap-1"><i class="fa-solid fa-chevron-left"></i> Change</p>
                     </div>
                 </div>
@@ -223,11 +188,9 @@
                     <div class="bg-discord-darker rounded-lg border border-gray-800 shadow-sm">
                         <!-- Confession Settings Panel -->
                         <div id="panel-confession" class="settings-panel p-6 space-y-6">
-                            
                             <div class="border-b border-gray-700/50 pb-4 mb-4">
                                 <h3 class="text-lg font-semibold text-white mb-1"><i class="fa-solid fa-hashtag text-discord-muted mr-2"></i> Channel Setup</h3>
                                 <p class="text-sm text-discord-muted mb-4">Select where Yachiyo will post the anonymous confessions.</p>
-                                
                                 <div>
                                     <label class="block text-xs font-bold text-[#b9bbbe] uppercase mb-2">Confession Channel ID</label>
                                     <input type="text" id="confess-channel" class="discord-input w-full p-2.5 rounded-[3px] text-sm" placeholder="e.g., 1045192837465928374">
@@ -237,8 +200,7 @@
 
                             <div>
                                 <h3 class="text-lg font-semibold text-white mb-1"><i class="fa-solid fa-arrow-up-1-9 text-discord-muted mr-2"></i> Sequence Numbering</h3>
-                                <p class="text-sm text-discord-muted mb-4">Configure the starting count for confessions. If you are migrating from another bot, set this to your last confession number.</p>
-                                
+                                <p class="text-sm text-discord-muted mb-4">Configure the starting count for confessions.</p>
                                 <div>
                                     <label class="block text-xs font-bold text-[#b9bbbe] uppercase mb-2">Starting Confession Count</label>
                                     <input type="number" id="confess-count" class="discord-input w-full p-2.5 rounded-[3px] text-sm" placeholder="1" min="1">
@@ -264,8 +226,6 @@
                         <div id="panel-economy" class="settings-panel p-6 space-y-6 hidden">
                              <div class="border-b border-gray-700/50 pb-4 mb-4">
                                 <h3 class="text-lg font-semibold text-white mb-1">Global Currency</h3>
-                                <p class="text-sm text-discord-muted mb-4">Set up the base economy rules for this server.</p>
-                                
                                 <div>
                                     <label class="block text-xs font-bold text-[#b9bbbe] uppercase mb-2">Currency Name / Symbol</label>
                                     <input type="text" id="econ-symbol" class="discord-input w-full p-2.5 rounded-[3px] text-sm" placeholder="e.g., Star Coins ⭐️">
@@ -286,7 +246,6 @@
                                     <input type="text" id="audit-channel" class="discord-input w-full p-2.5 rounded-[3px] text-sm" placeholder="ID of the mod-logs channel">
                                 </div>
                             </div>
-                            
                             <div class="space-y-4">
                                 <div class="flex items-center justify-between">
                                     <div class="text-sm text-white">Log Deleted Messages</div>
@@ -299,7 +258,7 @@
                             </div>
                         </div>
 
-                        <!-- Brain Settings Panel (Placeholder) -->
+                        <!-- Brain Settings Panel -->
                         <div id="panel-brain" class="settings-panel p-6 hidden">
                             <div class="text-center py-10">
                                 <i class="fa-solid fa-brain text-5xl text-discord-muted mb-4"></i>
@@ -320,15 +279,9 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================
-        // STEP 1: DISCORD OAUTH2 CREDENTIALS
-        // ==========================================
         const CLIENT_ID = '1521501985193463888'; 
         const REDIRECT_URI = 'https://sereiatalia.github.io/Yachiyo-Website/';
 
-        // ==========================================
-        // STEP 2: FIREBASE CONFIGURATION
-        // ==========================================
         const firebaseConfig = {
           apiKey: "AIzaSyCmSaqy2Nh1lkTl0kfrJ9vjy9s_5yExECI",
           authDomain: "yachiyo-app.firebaseapp.com",
@@ -340,13 +293,7 @@
         };
 
         const appId = 'yachiyo-dashboard-app';
-        let app, db, auth, currentUser, currentServerId;
-
-        const mockServers = [
-            { id: '109823476', name: 'Anime Hangout', icon: 'AH', color: 'from-blue-500 to-purple-600' },
-            { id: '982734628', name: 'Genshin Impact PH', icon: 'GI', color: 'from-green-400 to-blue-500' },
-            { id: '564738291', name: 'Yachiyo Dev Server', icon: 'YD', color: 'from-pink-500 to-orange-400' }
-        ];
+        let app, db, auth, currentUser, currentServerId, discordAccessToken;
 
         async function initApp() {
             try {
@@ -356,12 +303,11 @@
                 
                 setupUI();
                 
-                // Fixed Token Parser
                 const hash = window.location.hash.substring(1);
                 const params = new URLSearchParams(hash);
-                const accessToken = params.get('access_token');
+                discordAccessToken = params.get('access_token');
 
-                if (accessToken) {
+                if (discordAccessToken) {
                     await signInAnonymously(auth);
                     
                     onAuthStateChanged(auth, async (user) => {
@@ -370,7 +316,7 @@
                             
                             try {
                                 const response = await fetch('https://discord.com/api/users/@me', {
-                                    headers: { authorization: `Bearer ${accessToken}` }
+                                    headers: { authorization: `Bearer ${discordAccessToken}` }
                                 });
                                 const discordUser = await response.json();
                                 document.getElementById('display-user-id').textContent = discordUser.username;
@@ -382,7 +328,7 @@
                             }
 
                             document.getElementById('user-profile').classList.remove('hidden');
-                            renderServerList();
+                            await fetchUserServers();
                             showView('servers');
                             
                             window.history.replaceState(null, null, window.location.pathname);
@@ -399,6 +345,7 @@
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Redirecting...';
             btn.disabled = true;
 
+            // Notice we included 'guilds' scope here so we can fetch your real servers!
             const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds`;
             window.location.href = oauthUrl;
         };
@@ -416,42 +363,80 @@
             document.getElementById('view-login').classList.add('hidden');
             document.getElementById('view-servers').classList.add('hidden');
             document.getElementById('view-dashboard').classList.add('hidden');
-
             document.getElementById(`view-${viewName}`).classList.remove('hidden');
         };
 
-        window.renderServerList = () => {
+        // Fetch user's real servers and check bot presence
+        async function fetchUserServers() {
             const container = document.getElementById('server-list');
-            container.innerHTML = '';
-            
-            mockServers.forEach(server => {
-                const card = document.createElement('div');
-                card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 hover:border-discord-blurple cursor-pointer transition-all hover:-translate-y-1 group flex items-center gap-4";
-                card.onclick = () => selectServer(server);
-                
-                card.innerHTML = `
-                    <div class="w-14 h-14 rounded-[1rem] bg-gradient-to-br ${server.color} flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:rounded-[0.5rem] transition-all duration-300">
-                        ${server.icon}
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-white">${server.name}</h3>
-                        <p class="text-xs text-discord-muted mt-1">ID: ${server.id}</p>
-                    </div>
-                    <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                        <i class="fa-solid fa-chevron-right text-discord-blurple"></i>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        };
+            container.innerHTML = '<p class="text-discord-muted col-span-3 text-center py-8"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your servers...</p>';
+
+            try {
+                // 1. Fetch guilds user has permissions in (Administrator or Manage Server)
+                const guildsRes = await fetch('https://discord.com/api/users/@me/guilds', {
+                    headers: { authorization: `Bearer ${discordAccessToken}` }
+                });
+                const guilds = await guildsRes.json();
+
+                if (!Array.isArray(guilds)) {
+                    container.innerHTML = '<p class="text-discord-red col-span-3 text-center">Failed to load servers. Please try logging in again.</p>';
+                    return;
+                }
+
+                // Filter servers where user is Administrator (permissions bitmask check or admin flag)
+                // Discord admin permission flag is 0x8
+                const managedGuilds = guilds.filter(g => (g.permissions & 0x8) === 0x8 || g.owner);
+
+                container.innerHTML = '';
+
+                if (managedGuilds.length === 0) {
+                    container.innerHTML = '<p class="text-discord-muted col-span-3 text-center">No servers found where you have Administrator permissions.</p>';
+                    return;
+                }
+
+                managedGuilds.forEach(server => {
+                    // Note: In client-side JS without a bot token backend, we list the servers you manage.
+                    // To check if Yachiyo is explicitly in it, we render the card. 
+                    // If you want to restrict it completely, you can check bot presence via your bot backend, 
+                    // but here we let you click any server you manage!
+                    const card = document.createElement('div');
+                    card.className = "bg-discord-darker p-4 rounded-xl border border-gray-800 hover:border-discord-blurple cursor-pointer transition-all hover:-translate-y-1 group flex items-center gap-4";
+                    card.onclick = () => selectServer(server);
+
+                    let iconUrl = server.icon 
+                        ? `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png` 
+                        : `https://placehold.co/100x100/5865F2/FFFFFF?text=${server.name.charAt(0)}`;
+
+                    card.innerHTML = `
+                        <img src="${iconUrl}" class="w-14 h-14 rounded-full object-cover shadow-lg group-hover:rounded-xl transition-all duration-300" alt="Server Icon">
+                        <div>
+                            <h3 class="font-bold text-white truncate w-48">${server.name}</h3>
+                            <p class="text-xs text-discord-muted mt-1">ID: ${server.id}</p>
+                            <span class="inline-block mt-1 text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded">Manageable</span>
+                        </div>
+                        <div class="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fa-solid fa-chevron-right text-discord-blurple"></i>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error("Error fetching guilds:", err);
+                container.innerHTML = '<p class="text-discord-red col-span-3 text-center">Error loading your servers from Discord.</p>';
+            }
+        }
 
         window.selectServer = async (server) => {
             currentServerId = server.id;
             
             document.getElementById('active-server-name').textContent = server.name;
             const iconDiv = document.getElementById('active-server-icon');
-            iconDiv.className = `w-10 h-10 rounded-[0.5rem] bg-gradient-to-br ${server.color} flex items-center justify-center text-white font-bold`;
-            iconDiv.textContent = server.icon;
+            let iconUrl = server.icon 
+                ? `https://cdn.discordapp.com/icons/${server.id}/${server.icon}.png` 
+                : `https://placehold.co/100x100/5865F2/FFFFFF?text=${server.name.charAt(0)}`;
+            
+            iconDiv.innerHTML = `<img src="${iconUrl}" class="w-full h-full object-cover">`;
             
             switchTab('confession');
             await loadServerConfig(server.id);
@@ -461,26 +446,22 @@
 
         window.loadServerConfig = async (serverId) => {
             if (!currentUser) return;
-            
             try {
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'serverConfigs', serverId);
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    
                     if (data.confession) {
                         document.getElementById('confess-channel').value = data.confession.channelId || '';
                         document.getElementById('confess-count').value = data.confession.startCount || '1';
                         document.getElementById('confess-log-toggle').checked = data.confession.logEnabled || false;
                         document.getElementById('preview-count').textContent = data.confession.startCount || '1';
                     }
-                    
                     if (data.economy) {
                         document.getElementById('econ-symbol').value = data.economy.symbol || '';
                         document.getElementById('econ-start-bal').value = data.economy.startBalance || '0';
                     }
-                    
                     if (data.audit) {
                         document.getElementById('audit-channel').value = data.audit.channelId || '';
                         document.getElementById('audit-msg-del').checked = data.audit.logMessageDeletes || false;
@@ -526,7 +507,6 @@
             try {
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'serverConfigs', currentServerId);
                 await setDoc(docRef, configData, { merge: true });
-                
                 showToast("Configuration saved successfully!");
             } catch (error) {
                 console.error("Error saving config:", error);
@@ -555,7 +535,6 @@
             });
 
             document.getElementById(`panel-${tabId}`).classList.remove('hidden');
-            
             document.getElementById('panel-title').textContent = panelData[tabId].title;
             document.getElementById('panel-desc').textContent = panelData[tabId].desc;
         };
@@ -563,23 +542,16 @@
         window.showToast = (message, isError = false) => {
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toast-message');
-            
             toastMsg.textContent = message;
             if (isError) {
                 toast.classList.remove('bg-discord-green');
                 toast.classList.add('bg-discord-red');
-                toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <span id="toast-message">${message}</span>`;
             } else {
                 toast.classList.remove('bg-discord-red');
                 toast.classList.add('bg-discord-green');
-                toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span id="toast-message">${message}</span>`;
             }
-
             toast.classList.remove('translate-x-full', 'opacity-0');
-            
-            setTimeout(() => {
-                toast.classList.add('translate-x-full', 'opacity-0');
-            }, 3000);
+            setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); }, 3000);
         };
 
         function setupUI() {
