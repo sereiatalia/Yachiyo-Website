@@ -354,6 +354,14 @@
                                 <div id="setup-checklist" class="grid gap-3 mt-6">Loading checklist…</div>
                             </div>
                         </div>
+                        <div id="panel-audit-viewer" class="settings-panel p-6 hidden">
+                            <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
+                                <h3 class="text-xl font-semibold text-white">Activity & Audit Logs</h3>
+                                <p class="text-discord-muted mt-2">Search recent Yachiyo activity for this server.</p>
+                                <input id="audit-search" oninput="loadAuditLogs()" class="discord-input w-full p-2.5 rounded-[3px] text-sm mt-6" placeholder="Search event, user ID, target ID, or details...">
+                                <div id="audit-log-list" class="grid gap-3 mt-4">Loading logs…</div>
+                            </div>
+                        </div>
 
                     </div>
                 </div>
@@ -690,6 +698,7 @@
         const panelData = {
             dashboard: { title: 'Live Server Dashboard', desc: 'Current server and Yachiyo status from Discord.' },
             checklist: { title: 'Setup Checklist', desc: 'Check server configuration and required permissions.' },
+            'audit-viewer': { title: 'Activity & Audit Logs', desc: 'Search recent Yachiyo activity for this server.' },
             commands: { title: 'Commands', desc: 'Browse Yachiyo commands and how to use them in Discord.' },
             'save-data': { title: 'Save Data', desc: 'Export, import, and inspect this server’s saved data.' },
             'server-info': { title: 'Server Info', desc: 'Edit the live server information panel managed by Yachiyo.' },
@@ -728,6 +737,7 @@
                 if (tabId === 'save-data') loadSaveDataOverview();
                 if (tabId === 'dashboard') loadLiveDashboard();
                 if (tabId === 'checklist') loadSetupChecklist();
+                if (tabId === 'audit-viewer') loadAuditLogs();
             }
         };
 
@@ -782,6 +792,22 @@
                 target.innerHTML = Object.entries(labels).map(([key, label]) => `<div class="flex items-center justify-between rounded bg-gray-900/60 px-4 py-3"><span class="text-gray-200">${label}</span><span class="${data.checks[key] ? 'text-green-400' : 'text-red-300'}">${data.checks[key] ? '✓ Ready' : 'Needs setup'}</span></div>`).join('') + (data.missingPermissions.length ? `<p class="text-sm text-red-300 mt-2">Missing permissions: ${data.missingPermissions.join(', ')}</p>` : '');
             } catch (error) { target.textContent = error.message; }
         }
+
+        let auditSearchTimer;
+        window.loadAuditLogs = () => {
+            clearTimeout(auditSearchTimer);
+            auditSearchTimer = setTimeout(async () => {
+                const target = document.getElementById('audit-log-list');
+                if (!target || !currentServerId || !discordAccessToken) return;
+                try {
+                    const search = encodeURIComponent(document.getElementById('audit-search').value.trim());
+                    const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/audit-logs?search=${search}&limit=100`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+                    const payload = await response.json();
+                    if (!response.ok) throw new Error(payload.error || 'Could not load audit logs.');
+                    target.innerHTML = payload.logs?.length ? payload.logs.map(log => `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3"><div class="flex flex-wrap items-center justify-between gap-2"><code class="text-blue-300">${log.event_type}</code><span class="text-xs text-discord-muted">${new Date(log.created_at).toLocaleString()}</span></div><p class="text-xs text-discord-muted mt-2">Actor: ${log.actor_user_id || 'system'} · Target: ${log.target_id || '—'}</p><pre class="text-xs text-gray-300 mt-2 whitespace-pre-wrap break-words">${JSON.stringify(log.data || {}, null, 2)}</pre></div>`).join('') : '<p class="text-discord-muted">No matching activity found.</p>';
+                } catch (error) { target.textContent = error.message; }
+            }, 250);
+        };
 
         async function loadSaveDataOverview() {
             const target = document.getElementById('save-data-overview');
@@ -888,7 +914,7 @@
         function setupUI() {
             const navigation = document.querySelector('aside .p-3');
             navigation.innerHTML = '<div class="text-xs font-bold text-discord-muted uppercase tracking-wider mb-2 mt-4 px-2">Server Workspace</div>';
-            [['dashboard', 'Live Dashboard', 'fa-chart-line', 'text-cyan-400'], ['checklist', 'Setup Checklist', 'fa-list-check', 'text-yellow-300'], ['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400']].forEach(([id, label, icon, color], index) => {
+            [['dashboard', 'Live Dashboard', 'fa-chart-line', 'text-cyan-400'], ['checklist', 'Setup Checklist', 'fa-list-check', 'text-yellow-300'], ['audit-viewer', 'Activity Logs', 'fa-clock-rotate-left', 'text-blue-400'], ['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400']].forEach(([id, label, icon, color], index) => {
                 const button = document.createElement('button');
                 button.id = `tab-${id}`;
                 button.className = `dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium ${index === 0 ? 'bg-gray-700/50 text-white' : 'text-discord-muted'} hover:bg-gray-800 hover:text-discord-text transition-colors`;
