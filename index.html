@@ -301,6 +301,10 @@ warning: in the working copy of 'index.html', LF will be replaced by CRLF the ne
                                     <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3">Yachiyo commands</h4>
                                     <div id="command-panel-commands" class="grid gap-2"></div>
                                 </div>
+                                <div class="mt-6">
+                                    <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3">Current saved data</h4>
+                                    <div id="command-panel-data" class="grid gap-2 text-sm text-discord-muted">Loading server data…</div>
+                                </div>
                                 <p class="text-xs text-discord-muted mt-6">This dashboard is being connected to Yachiyo’s PostgreSQL settings. Every save action will use the same service used by the Discord command.</p>
                             </div>
                         </div>
@@ -660,6 +664,7 @@ warning: in the working copy of 'index.html', LF will be replaced by CRLF the ne
                 document.getElementById('command-panel-title').textContent = module.label;
                 document.getElementById('command-panel-description').textContent = module.description;
                 document.getElementById('command-panel-commands').innerHTML = module.commands.map(command => `<div class="rounded bg-gray-900/60 px-3 py-2 text-sm text-gray-200 font-mono">${command}</div>`).join('');
+                loadModuleData();
                 document.getElementById('panel-title').textContent = module.label;
                 document.getElementById('panel-desc').textContent = module.description;
             } else {
@@ -667,6 +672,21 @@ warning: in the working copy of 'index.html', LF will be replaced by CRLF the ne
                 document.getElementById('panel-desc').textContent = panelData[tabId].desc;
             }
         };
+
+        async function loadModuleData() {
+            const target = document.getElementById('command-panel-data');
+            if (!target || !currentServerId || !discordAccessToken) return;
+            target.textContent = 'Loading server data…';
+            try {
+                const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/overview`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+                if (!response.ok) throw new Error('Could not load server data.');
+                const payload = await response.json();
+                const entries = Object.entries(payload.tables || {}).filter(([, rows]) => rows.length);
+                target.innerHTML = entries.length
+                    ? entries.map(([table, rows]) => `<div class="flex items-center justify-between rounded bg-gray-900/60 px-3 py-2"><span class="font-mono text-gray-200">${table}</span><span class="text-discord-muted">${rows.length} record${rows.length === 1 ? '' : 's'}</span></div>`).join('')
+                    : '<p>No saved data exists for this server yet.</p>';
+            } catch (error) { target.textContent = error.message; }
+        }
 
         window.exportServerData = async () => {
             if (!currentServerId || !discordAccessToken) return showToast('Please select a server first.', true);
