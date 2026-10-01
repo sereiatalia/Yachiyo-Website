@@ -319,6 +319,7 @@
         const REDIRECT_URI = 'https://sereiatalia.github.io/Yachiyo-Website/';
         const BOT_API_URL = 'https://yachiyo-app-production-f510.up.railway.app';
         const commandModules = {
+            confession: { label: 'Confessions', icon: 'fa-envelope', color: 'text-pink-400', description: 'Configure anonymous confession routing and setup.', commands: ['/confession', '/confession-setup'] },
             'server-info': { label: 'Server Info', icon: 'fa-circle-info', color: 'text-cyan-400', description: 'Edit the live server information panel.', commands: ['/server-info', '/server-info-setup', '/server-info-edit', '/server-info-banner', '/server-info-staff', '/server-info-recount'] },
             introduction: { label: 'Introduction', icon: 'fa-hand-wave', color: 'text-pink-400', description: 'Configure member introductions and reward roles.', commands: ['/introduction-setup', '/introduction-panel', '/introduction-template', '/introduction-status', '/introduction-reward-role', '/introduction-reward-cleanup'] },
             rules: { label: 'Rules', icon: 'fa-book', color: 'text-amber-400', description: 'Manage the server rulebook and banner.', commands: ['/rules-setup', '/rules-panel', '/rules-edit', '/rules-banner'] },
@@ -539,7 +540,7 @@
             
             iconDiv.innerHTML = `<img src="${iconUrl}" class="w-full h-full object-cover">`;
             
-            switchTab('confession');
+            switchTab('server-info');
             await loadServerConfig(server.id);
             
             showView('dashboard');
