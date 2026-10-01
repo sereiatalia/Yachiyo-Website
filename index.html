@@ -1,3 +1,4 @@
+warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -180,9 +181,14 @@
                             <h2 class="text-2xl font-bold text-white" id="panel-title">Confession Service</h2>
                             <p class="text-discord-muted text-sm mt-1" id="panel-desc">Manage anonymous confessions routing and count logic.</p>
                         </div>
-                        <button onclick="saveConfiguration()" class="bg-discord-green hover:bg-green-600 text-white px-5 py-2 rounded-[3px] font-medium transition-colors shadow-md flex items-center gap-2">
-                            <i class="fa-solid fa-floppy-disk"></i> Save Changes
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="exportServerData()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-[3px] font-medium transition-colors shadow-md flex items-center gap-2">
+                                <i class="fa-solid fa-download"></i> Export Data
+                            </button>
+                            <button onclick="saveConfiguration()" class="bg-discord-green hover:bg-green-600 text-white px-5 py-2 rounded-[3px] font-medium transition-colors shadow-md flex items-center gap-2">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                            </button>
+                        </div>
                     </div>
 
                     <div class="bg-discord-darker rounded-lg border border-gray-800 shadow-sm">
@@ -660,6 +666,21 @@
                 document.getElementById('panel-title').textContent = panelData[tabId].title;
                 document.getElementById('panel-desc').textContent = panelData[tabId].desc;
             }
+        };
+
+        window.exportServerData = async () => {
+            if (!currentServerId || !discordAccessToken) return showToast('Please select a server first.', true);
+            try {
+                const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/export`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+                if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error.error || 'Export failed.'); }
+                const blob = await response.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `yachiyo-${currentServerId}-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+                showToast('Server backup downloaded.');
+            } catch (error) { console.error(error); showToast(error.message, true); }
         };
 
         window.showToast = (message, isError = false) => {
