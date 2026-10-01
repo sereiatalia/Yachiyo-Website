@@ -453,16 +453,43 @@
                 
                 setupUI();
                 
-                const hash = window.location.hash.substring(1);
-                const params = new URLSearchParams(hash);
-                discordAccessToken = params.get('access_token') || sessionStorage.getItem('yachiyo_discord_access_token');
-                if (discordAccessToken) sessionStorage.setItem('yachiyo_discord_access_token', discordAccessToken);
+                const params = new URLSearchParams(window.location.search);
+                const oauthCode = params.get('code');
+                if (oauthCode) {
+                    const tokenResponse = await fetch(`${BOT_API_URL}/api/auth/discord/token`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: oauthCode }) });
+                    const tokenPayload = await tokenResponse.json();
+                    if (!tokenResponse.ok) throw new Error(tokenPayload.error || 'Discord login could not be completed.');
+                    discordAccessToken = tokenPayload.access_token;
+                    sessionStorage.setItem('yachiyo_discord_access_token', discordAccessToken);
+                    if (tokenPayload.refresh_token) sessionStorage.setItem('yachiyo_discord_refresh_token', tokenPayload.refresh_token);
+                    sessionStorage.setItem('yachiyo_discord_token_expires_at', String(Date.now() + (tokenPayload.expires_in || 604800) * 1000));
+                    window.history.replaceState(null, null, window.location.pathname);
+                } else {
+                    discordAccessToken = sessionStorage.getItem('yachiyo_discord_access_token');
+                }
+                if (discordAccessToken && !sessionStorage.getItem('yachiyo_discord_refresh_token') && !oauthCode) {
+                    sessionStorage.removeItem('yachiyo_discord_access_token');
+                    sessionStorage.removeItem('yachiyo_discord_token_expires_at');
+                    discordAccessToken = null;
+                }
 
                 if (discordAccessToken) {
                     // Hide the login screen immediately while Firebase restores the session.
                     // This prevents the login panel from flashing on page reload.
                     showView('servers');
                     try {
+                        const expiresAt = Number(sessionStorage.getItem('yachiyo_discord_token_expires_at') || 0);
+                        if (!discordAccessToken || (expiresAt && Date.now() > expiresAt - 60000)) {
+                            const refreshToken = sessionStorage.getItem('yachiyo_discord_refresh_token');
+                            if (!refreshToken) throw new Error('Discord authorization expired. Please log in again.');
+                            const refreshResponse = await fetch(`${BOT_API_URL}/api/auth/discord/token`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: refreshToken }) });
+                            const refreshPayload = await refreshResponse.json();
+                            if (!refreshResponse.ok) throw new Error(refreshPayload.error || 'Discord authorization expired. Please log in again.');
+                            discordAccessToken = refreshPayload.access_token;
+                            sessionStorage.setItem('yachiyo_discord_access_token', discordAccessToken);
+                            if (refreshPayload.refresh_token) sessionStorage.setItem('yachiyo_discord_refresh_token', refreshPayload.refresh_token);
+                            sessionStorage.setItem('yachiyo_discord_token_expires_at', String(Date.now() + (refreshPayload.expires_in || 604800) * 1000));
+                        }
                         await signInAnonymously(auth);
                     } catch (error) {
                         console.error('Could not restore the saved session:', error);
@@ -510,7 +537,7 @@
             btn.disabled = true;
 
             // Notice we included 'guilds' scope here so we can fetch your real servers!
-            const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds`;
+            const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=identify%20guilds&prompt=consent`;
             window.location.href = oauthUrl;
         };
 
@@ -525,6 +552,8 @@
                 currentUser = null;
                 discordAccessToken = null;
                 sessionStorage.removeItem('yachiyo_discord_access_token');
+                sessionStorage.removeItem('yachiyo_discord_refresh_token');
+                sessionStorage.removeItem('yachiyo_discord_token_expires_at');
                 document.getElementById('user-profile').classList.add('hidden');
                 showView('login');
             }
