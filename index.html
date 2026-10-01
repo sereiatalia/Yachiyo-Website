@@ -413,7 +413,7 @@
                                 </div>
                                 <div class="mt-6">
                                     <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3">Current saved data</h4>
-                                    <div id="command-panel-data" class="grid gap-2 text-sm text-discord-muted">Loading server data…</div>
+                                    <div id="command-panel-data" class="grid gap-2 text-sm text-discord-muted"><div class="cute-loading"><span class="cute-loading-heart">🍓</span><div class="cute-loading-track"><div class="cute-loading-bar"></div></div><span>Loading server data…</span><span>🐰</span></div></div>
                                 </div>
                                 <p class="text-xs text-discord-muted mt-6">This dashboard is being connected to Yachiyo’s PostgreSQL settings. Every save action will use the same service used by the Discord command.</p>
                             </div>
@@ -448,7 +448,7 @@
                                     <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3">Current saved data</h4>
                                     <div id="save-data-overview" class="grid gap-2 text-sm text-discord-muted">Select this section to load saved data.</div>
                                     <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3 mt-6">Backup history</h4>
-                                    <div id="backup-history" class="grid gap-2 text-sm text-discord-muted">Loading backups…</div>
+                                    <div id="backup-history" class="grid gap-2 text-sm text-discord-muted"><div class="cute-loading"><span class="cute-loading-heart">🍓</span><div class="cute-loading-track"><div class="cute-loading-bar"></div></div><span>Loading backups…</span><span>🐰</span></div></div>
                                 </div>
                             </div>
                         </div>
@@ -457,7 +457,7 @@
                             <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
                                 <h3 class="text-xl font-semibold text-white">Live Server Dashboard</h3>
                                 <p class="text-discord-muted mt-2">Current information from Discord and Yachiyo.</p>
-                                <div id="live-dashboard-data" class="grid gap-3 mt-6">Loading server information…</div>
+                                <div id="live-dashboard-data" class="grid gap-3 mt-6"><div class="cute-loading"><span class="cute-loading-heart">🍓</span><div class="cute-loading-track"><div class="cute-loading-bar"></div></div><span>Loading server information…</span><span>🐰</span></div></div>
                             </div>
                         </div>
 
@@ -465,7 +465,7 @@
                             <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
                                 <h3 class="text-xl font-semibold text-white">Server Setup Checklist</h3>
                                 <p class="text-discord-muted mt-2">See what is ready and what still needs configuration.</p>
-                                <div id="setup-checklist" class="grid gap-3 mt-6">Loading checklist…</div>
+                                <div id="setup-checklist" class="grid gap-3 mt-6"><div class="cute-loading"><span class="cute-loading-heart">🍓</span><div class="cute-loading-track"><div class="cute-loading-bar"></div></div><span>Loading checklist…</span><span>🐰</span></div></div>
                             </div>
                         </div>
                         <div id="panel-audit-viewer" class="settings-panel p-6 hidden">
@@ -476,7 +476,7 @@
                                     <p class="text-discord-muted mt-2">Search configuration changes, moderation events, and server activity.</p>
                                 </div>
                                 <input id="audit-search" oninput="loadAuditLogs()" class="discord-input w-full p-2.5 rounded-[3px] text-sm mt-6" placeholder="Search event, user ID, target ID, or details...">
-                                <div id="audit-log-list" class="grid gap-3 mt-4">Loading logs…</div>
+                                <div id="audit-log-list" class="grid gap-3 mt-4"><div class="cute-loading"><span class="cute-loading-heart">🍓</span><div class="cute-loading-track"><div class="cute-loading-bar"></div></div><span>Loading activity…</span><span>🐰</span></div></div>
                             </div>
                         </div>
 
@@ -637,7 +637,7 @@
 // Updated Server Fetching Logic (Dynamic Bot Detection)
         async function fetchUserServers() {
             const container = document.getElementById('server-list');
-            container.innerHTML = '<p class="text-discord-muted col-span-3 text-center py-8"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading your servers...</p>';
+            container.innerHTML = dashboardLoading('Finding your servers…');
 
             try {
                 // 1. Fetch user's managed guilds from Discord
@@ -963,7 +963,7 @@
         async function loadSaveDataOverview() {
             const target = document.getElementById('save-data-overview');
             if (!target || !currentServerId || !discordAccessToken) return;
-            target.textContent = 'Loading saved data…';
+            target.innerHTML = dashboardLoading('Loading saved data…');
             try {
                 const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/overview`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
                 const payload = await response.json();
@@ -1002,7 +1002,7 @@
         async function loadModuleData() {
             const target = document.getElementById('command-panel-data');
             if (!target || !currentServerId || !discordAccessToken) return;
-            target.textContent = 'Loading server data…';
+            target.innerHTML = dashboardLoading('Loading server data…');
             try {
                 const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/overview`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
                 if (!response.ok) throw new Error('Could not load server data.');
