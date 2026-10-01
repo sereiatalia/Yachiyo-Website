@@ -332,6 +332,8 @@
                                 <div>
                                     <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3">Current saved data</h4>
                                     <div id="save-data-overview" class="grid gap-2 text-sm text-discord-muted">Select this section to load saved data.</div>
+                                    <h4 class="text-xs font-bold text-[#b9bbbe] uppercase mb-3 mt-6">Backup history</h4>
+                                    <div id="backup-history" class="grid gap-2 text-sm text-discord-muted">Loading backups…</div>
                                 </div>
                             </div>
                         </div>
@@ -720,8 +722,32 @@
                 if (!response.ok) throw new Error(payload.error || 'Could not load saved data.');
                 const entries = Object.entries(payload.tables || {}).filter(([, rows]) => rows.length);
                 target.innerHTML = entries.length ? entries.map(([table, rows]) => `<div class="flex items-center justify-between rounded bg-gray-900/60 px-3 py-2"><span class="font-mono text-gray-200">${table}</span><span>${rows.length} record${rows.length === 1 ? '' : 's'}</span></div>`).join('') : '<p>No saved data exists for this server yet.</p>';
+                await loadBackupHistory();
             } catch (error) { target.textContent = error.message; }
         }
+
+        async function loadBackupHistory() {
+            const target = document.getElementById('backup-history');
+            if (!target || !currentServerId || !discordAccessToken) return;
+            const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/backups`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.error || 'Could not load backup history.');
+            target.innerHTML = payload.backups?.length ? payload.backups.map(backup => `<div class="flex flex-wrap items-center justify-between gap-2 rounded bg-gray-900/60 px-3 py-2"><span>${new Date(backup.exportedAt).toLocaleString()} <span class="text-xs">(${backup.tableCount} tables)</span></span><span class="flex gap-2"><button class="text-discord-blurple hover:underline" onclick="downloadBackup('${backup.id}')">Download</button><button class="text-yellow-300 hover:underline" onclick="restoreBackup('${backup.id}')">Restore</button></span></div>`).join('') : '<p>No Firebase backups found yet.</p>';
+        }
+
+        window.downloadBackup = async (snapshotId) => {
+            const backup = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/backups/${snapshotId}`, { headers: { Authorization: `Bearer ${discordAccessToken}` } }).then(response => response.json());
+            const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })); link.download = `yachiyo-backup-${currentServerId}-${snapshotId}.json`; link.click(); URL.revokeObjectURL(link.href);
+        };
+
+        window.restoreBackup = async (snapshotId) => {
+            if (!confirm('Restore this backup? Existing records for this server will be replaced.')) return;
+            const backup = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/backups/${snapshotId}`, { headers: { Authorization: `Bearer ${discordAccessToken}` } }).then(response => response.json());
+            const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) });
+            const result = await response.json();
+            if (!response.ok) return showToast(result.error || 'Restore failed.', true);
+            showToast('Backup restored successfully.'); loadSaveDataOverview();
+        };
 
         async function loadModuleData() {
             const target = document.getElementById('command-panel-data');
