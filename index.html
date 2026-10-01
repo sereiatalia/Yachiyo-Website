@@ -178,6 +178,12 @@
         @keyframes bunnyWiggle { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-4deg) translateY(-3px); } }
         @keyframes sparkle { 0%,100% { opacity: .35; transform: scale(.8) rotate(0); } 50% { opacity: 1; transform: scale(1.2) rotate(18deg); } }
         @keyframes cardRise { from { opacity: .65; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .cute-loading { display: flex; align-items: center; gap: 12px; padding: 18px; color: #806070; background: #fff6fa; border: 1px solid #f2c5d7; border-radius: 15px; }
+        .cute-loading-track { flex: 1; height: 10px; overflow: hidden; border-radius: 999px; background: #ffe0ec; }
+        .cute-loading-bar { width: 42%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #e85f91, #c7a7f0, #e85f91); background-size: 200% 100%; animation: loadingSlide 1.15s ease-in-out infinite; }
+        .cute-loading-heart { color: #e85f91; animation: loadingBounce .8s ease-in-out infinite alternate; }
+        @keyframes loadingSlide { 0% { transform: translateX(-110%); background-position: 0 0; } 100% { transform: translateX(250%); background-position: 100% 0; } }
+        @keyframes loadingBounce { to { transform: translateY(-4px) scale(1.12); } }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
         ::-webkit-scrollbar-track { background: #fff0f6; }
         ::-webkit-scrollbar-thumb { background: #efa0bb; }
@@ -898,28 +904,44 @@
             document.querySelectorAll('.command-row').forEach(row => { row.classList.toggle('hidden', query && !row.dataset.command.includes(query) && !row.dataset.category.includes(query)); });
         };
 
+        function dashboardLoading(label = 'Loading Yachiyo data…') {
+            return `<div class="cute-loading"><span class="cute-loading-heart">🍓</span><div class="cute-loading-track"><div class="cute-loading-bar"></div></div><span>${label}</span><span>🐰</span></div>`;
+        }
+
+        function forceDiscordLogin() {
+            discordAccessToken = null;
+            sessionStorage.removeItem('yachiyo_discord_access_token');
+            sessionStorage.removeItem('yachiyo_discord_refresh_token');
+            sessionStorage.removeItem('yachiyo_discord_token_expires_at');
+            currentServerId = null;
+            if (auth) signOut(auth).catch(() => null);
+            showView('login');
+        }
+
         async function loadLiveDashboard() {
             const target = document.getElementById('live-dashboard-data');
             if (!target || !currentServerId || !discordAccessToken) return;
+            target.innerHTML = dashboardLoading('Loading server dashboard…');
             try {
                 const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/dashboard`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Could not load live dashboard.');
                 const missing = data.yachiyo.missingPermissions;
                 target.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-3"><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Status</div><div class="text-lg font-semibold ${data.status === 'online' ? 'text-green-400' : 'text-yellow-300'}">${data.status}</div></div><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Members</div><div class="text-lg font-semibold text-white">${data.server.memberCount}</div></div><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Roles</div><div class="text-lg font-semibold text-white">${data.roles.total}</div></div></div><div class="rounded bg-gray-900/60 p-4 text-sm text-gray-200"><p><strong>Channels:</strong> ${data.channels.total} total · ${data.channels.text} text · ${data.channels.voice} voice</p><p class="mt-2"><strong>Yachiyo permissions:</strong> ${data.yachiyo.permissions.length} granted</p>${missing.length ? `<p class="mt-3 text-red-300"><strong>Missing permissions:</strong> ${missing.join(', ')}</p>` : '<p class="mt-3 text-green-300">All recommended permissions are available.</p>'}</div>`;
-            } catch (error) { target.textContent = error.message; }
+            } catch (error) { if (/authorization expired|authorization is required/i.test(error.message)) return forceDiscordLogin(); target.textContent = error.message; }
         }
 
         async function loadSetupChecklist() {
             const target = document.getElementById('setup-checklist');
             if (!target || !currentServerId || !discordAccessToken) return;
+            target.innerHTML = dashboardLoading('Checking server setup…');
             try {
                 const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/checklist`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Could not load checklist.');
                 const labels = { yachiyoOnline: 'Yachiyo is online', permissions: 'Required permissions granted', serverInfo: 'Server Info configured', rules: 'Rules configured', tickets: 'Tickets configured', introduction: 'Introduction configured', moderation: 'Moderation configured', backup: 'Firebase backup available' };
                 target.innerHTML = Object.entries(labels).map(([key, label]) => `<div class="flex items-center justify-between rounded bg-gray-900/60 px-4 py-3"><span class="text-gray-200">${label}</span><span class="${data.checks[key] ? 'text-green-400' : 'text-red-300'}">${data.checks[key] ? '✓ Ready' : 'Needs setup'}</span></div>`).join('') + (data.missingPermissions.length ? `<p class="text-sm text-red-300 mt-2">Missing permissions: ${data.missingPermissions.join(', ')}</p>` : '');
-            } catch (error) { target.textContent = error.message; }
+            } catch (error) { if (/authorization expired|authorization is required/i.test(error.message)) return forceDiscordLogin(); target.textContent = error.message; }
         }
 
         let auditSearchTimer;
