@@ -334,7 +334,18 @@
                 if (discordAccessToken) sessionStorage.setItem('yachiyo_discord_access_token', discordAccessToken);
 
                 if (discordAccessToken) {
-                    await signInAnonymously(auth);
+                    // Hide the login screen immediately while Firebase restores the session.
+                    // This prevents the login panel from flashing on page reload.
+                    showView('servers');
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error('Could not restore the saved session:', error);
+                        discordAccessToken = null;
+                        sessionStorage.removeItem('yachiyo_discord_access_token');
+                        showView('login');
+                        return;
+                    }
                     
                     onAuthStateChanged(auth, async (user) => {
                         if (user) {
@@ -360,6 +371,8 @@
                             window.history.replaceState(null, null, window.location.pathname);
                         }
                     });
+                } else {
+                    showView('login');
                 }
             } catch (error) {
                 console.error("Firebase init error:", error);
