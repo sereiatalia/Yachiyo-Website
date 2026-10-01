@@ -161,6 +161,24 @@
         .audit-event-meta i { color: #e85f91; margin-right: 4px; }
         .audit-event pre { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #17131a; background: #ffffff; border: 1px solid #f4d5e1; border-radius: 10px; padding: 12px; margin-top: 12px; font: .76rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
         .audit-empty { padding: 24px; text-align: center; color: #806070; background: #fff6fa; border: 1px dashed #efb3c9; border-radius: 14px; }
+        /* Extra playful motion and decoration. */
+        #view-servers::before, #view-dashboard::before { content: ''; position: fixed; width: 260px; height: 260px; border-radius: 50%; background: #ffe0ed; filter: blur(2px); opacity: .65; top: 110px; right: -90px; pointer-events: none; animation: bunnyFloat 7s ease-in-out infinite; }
+        #view-servers::after, #view-dashboard::after { content: '🍓  ♡  🐰  ♡  🍓'; position: fixed; bottom: 22px; right: 28px; color: #e85f91; font-size: 18px; letter-spacing: 7px; opacity: .8; pointer-events: none; animation: bunnyWiggle 4s ease-in-out infinite; }
+        #view-dashboard > div:last-child { position: relative; }
+        #view-dashboard > div:last-child::before { content: '✦'; position: absolute; top: 30px; right: 9%; color: #c6a8f0; font-size: 30px; animation: sparkle 2.4s ease-in-out infinite; }
+        .settings-panel > div { animation: cardRise .45s ease both; }
+        .settings-panel input, .settings-panel textarea, .settings-panel select { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .settings-panel input:hover, .settings-panel textarea:hover, .settings-panel select:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(232,95,145,.10); }
+        .command-row { background: #ffffff !important; border: 1px solid #f2bfd4 !important; border-radius: 16px !important; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .command-row:hover { transform: translateX(5px); border-color: #e85f91 !important; box-shadow: 0 8px 18px rgba(232,95,145,.13); }
+        .command-row code { overflow-wrap: anywhere; }
+        .dashboard-tab { transition: transform .18s ease, background .18s ease !important; }
+        .dashboard-tab:hover { transform: translateX(4px); }
+        @keyframes bunnyFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(16px) rotate(5deg); } }
+        @keyframes bunnyWiggle { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-4deg) translateY(-3px); } }
+        @keyframes sparkle { 0%,100% { opacity: .35; transform: scale(.8) rotate(0); } 50% { opacity: 1; transform: scale(1.2) rotate(18deg); } }
+        @keyframes cardRise { from { opacity: .65; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
         ::-webkit-scrollbar-track { background: #fff0f6; }
         ::-webkit-scrollbar-thumb { background: #efa0bb; }
         ::-webkit-scrollbar-thumb:hover { background: var(--berry); }
@@ -869,7 +887,7 @@
                     const options = (command.options || []).map(option => `${option.name}${option.required ? ' (required)' : ''}`).join(', ');
                     const usage = `/${command.name}${options ? ' ' + options : ''}`;
                     const admin = command.default_member_permissions ? 'Administrator permission required' : 'Available to members';
-                    return `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3 command-row" data-command="${command.name}" data-category="${admin.toLowerCase()}"><div class="flex items-center justify-between gap-3"><code class="text-discord-blurple font-semibold">${usage}</code><span class="text-xs text-discord-muted">${admin}</span></div><p class="text-sm text-gray-200 mt-2">${command.description || 'Yachiyo command.'}</p><p class="text-xs text-discord-muted mt-2">Example: <code>/${command.name}${options ? ' ' + options.split(', ').map(option => option.replace(' (required)', '')).map(option => option + ' ...').join(' ') : ''}</code></p></div>`;
+                    return `<div class="rounded bg-gray-900/60 border border-gray-800 px-4 py-3 command-row" data-command="${command.name}" data-category="${admin.toLowerCase()}"><div class="flex items-center justify-between gap-3"><code class="text-discord-blurple font-semibold">${usage}</code><span class="text-xs text-discord-muted">${admin}</span></div><p class="text-sm text-gray-200 mt-2">${command.description || 'Yachiyo command.'}</p></div>`;
                 }).join('');
                 filterCommands();
             } catch (error) { target.innerHTML = `<p class="text-red-300">${error.message}</p>`; }
