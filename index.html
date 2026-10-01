@@ -281,6 +281,7 @@
 
         const CLIENT_ID = '1521501985193463888'; 
         const REDIRECT_URI = 'https://sereiatalia.github.io/Yachiyo-Website/';
+        const BOT_API_URL = 'https://yachiyo-app-production-f510.up.railway.app';
 
         const firebaseConfig = {
           apiKey: "AIzaSyCmSaqy2Nh1lkTl0kfrJ9vjy9s_5yExECI",
@@ -393,16 +394,20 @@
                     return;
                 }
 
-                // 2. Fetch the Bot's active servers from Firebase
+                // 2. Fetch Yachiyo's live guild cache from the Railway bot service.
+                // This is authoritative; Firebase is used for configuration, not presence.
                 let activeBotServers = [];
                 try {
-                    const botInfoRef = doc(db, 'system', 'botInfo');
-                    const botInfoSnap = await getDoc(botInfoRef);
-                    if (botInfoSnap.exists() && botInfoSnap.data().activeServers) {
-                        activeBotServers = botInfoSnap.data().activeServers;
-                    }
-                } catch (fbErr) {
-                    console.error("Could not fetch bot servers from Firebase:", fbErr);
+                    const botGuildsRes = await fetch(`${BOT_API_URL}/api/bot/guilds`, { cache: 'no-store' });
+                    if (!botGuildsRes.ok) throw new Error(`Bot API returned ${botGuildsRes.status}`);
+                    const botGuilds = await botGuildsRes.json();
+                    activeBotServers = Array.isArray(botGuilds.guilds)
+                        ? botGuilds.guilds.map(guild => String(guild.id))
+                        : [];
+                } catch (apiErr) {
+                    console.error("Could not fetch Yachiyo guilds from Railway:", apiErr);
+                    container.innerHTML = '<p class="text-discord-red col-span-3 text-center">Yachiyo is temporarily unavailable. Please try again shortly.</p>';
+                    return;
                 }
 
                 // 3. Render the UI dynamically
@@ -596,3 +601,4 @@
     </script>
 </body>
 </html>
+
