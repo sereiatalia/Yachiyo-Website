@@ -149,6 +149,10 @@
                     <button onclick="switchTab('confession')" id="tab-confession" class="dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium bg-gray-700/50 text-white">
                         <i class="fa-solid fa-envelope text-pink-400 w-5 text-center"></i> Confessions
                     </button>
+
+                    <button onclick="switchTab('server-info')" id="tab-server-info" class="dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium text-discord-muted hover:bg-gray-800 hover:text-discord-text transition-colors">
+                        <i class="fa-solid fa-circle-info text-cyan-400 w-5 text-center"></i> Server Info
+                    </button>
                     
                     <button onclick="switchTab('economy')" id="tab-economy" class="dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium text-discord-muted hover:bg-gray-800 hover:text-discord-text transition-colors">
                         <i class="fa-solid fa-coins text-yellow-400 w-5 text-center"></i> Economy
@@ -219,6 +223,26 @@
                                         <span class="toggle-dot absolute block w-6 h-6 bg-white rounded-full border-2 shadow inset-y-0 left-0"></span>
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Economy Settings Panel -->
+                        <div id="panel-server-info" class="settings-panel p-6 space-y-6 hidden">
+                            <div>
+                                <label class="block text-xs font-bold text-[#b9bbbe] uppercase mb-2">Panel Title</label>
+                                <input type="text" id="server-info-title" class="discord-input w-full p-2.5 rounded-[3px] text-sm" maxlength="120">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-[#b9bbbe] uppercase mb-2">Welcome Text</label>
+                                <textarea id="server-info-description" class="discord-input w-full p-2.5 rounded-[3px] text-sm" rows="5" maxlength="4000"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-[#b9bbbe] uppercase mb-2">Extra Information</label>
+                                <textarea id="server-info-extra" class="discord-input w-full p-2.5 rounded-[3px] text-sm" rows="4" maxlength="4000"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-[#b9bbbe] uppercase mb-2">Header Banner URL</label>
+                                <input type="url" id="server-info-banner" class="discord-input w-full p-2.5 rounded-[3px] text-sm" placeholder="https://..."><p class="text-xs text-discord-muted mt-2">Use a publicly accessible image or GIF URL.</p>
                             </div>
                         </div>
 
@@ -329,7 +353,7 @@
                             }
 
                             document.getElementById('user-profile').classList.remove('hidden');
-                            await fetchUserServers();
+            await fetchUserServers();
                             showView('servers');
                             
                             window.history.replaceState(null, null, window.location.pathname);
@@ -483,6 +507,14 @@
         window.loadServerConfig = async (serverId) => {
             if (!currentUser) return;
             try {
+                const serverInfoResponse = await fetch(`${BOT_API_URL}/api/guilds/${serverId}/server-info`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+                if (serverInfoResponse.ok) {
+                    const info = await serverInfoResponse.json();
+                    document.getElementById('server-info-title').value = info?.title || '';
+                    document.getElementById('server-info-description').value = info?.description || '';
+                    document.getElementById('server-info-extra').value = info?.extra_info || '';
+                    document.getElementById('server-info-banner').value = info?.banner_url || '';
+                }
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'serverConfigs', serverId);
                 const docSnap = await getDoc(docRef);
 
@@ -541,6 +573,13 @@
             };
 
             try {
+                if (document.getElementById('server-info-title') && currentServerId) {
+                    const serverInfoResponse = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/server-info`, {
+                        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` },
+                        body: JSON.stringify({ title: document.getElementById('server-info-title').value, description: document.getElementById('server-info-description').value, extra_info: document.getElementById('server-info-extra').value, banner_url: document.getElementById('server-info-banner').value })
+                    });
+                    if (!serverInfoResponse.ok) { const error = await serverInfoResponse.json().catch(() => ({})); throw new Error(error.error || 'Could not save Server Info.'); }
+                }
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'serverConfigs', currentServerId);
                 await setDoc(docRef, configData, { merge: true });
                 showToast("Configuration saved successfully!");
@@ -551,6 +590,7 @@
         };
 
         const panelData = {
+            'server-info': { title: 'Server Info', desc: 'Edit the live server information panel managed by Yachiyo.' },
             'confession': { title: 'Confession Service', desc: 'Manage anonymous confessions routing and count logic.' },
             'economy': { title: 'Global Economy', desc: 'Setup server currency, starting balances, and shop toggles.' },
             'audit': { title: 'Audit Logging', desc: 'Keep track of deleted messages, joins, and moderation actions.' },
