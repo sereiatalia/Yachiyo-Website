@@ -105,6 +105,8 @@
         #view-login h1::after, #panel-title::after { content: '  ♡'; color: var(--berry); }
         @media (max-width: 700px) {
             nav { padding-left: 14px !important; padding-right: 14px !important; }
+            .header-navigation { position: static; transform: none; margin-left: auto; margin-right: 8px; gap: 7px; padding: 4px 8px; }
+            .header-navigation button { font-size: .62rem; letter-spacing: .05em; }
             nav .text-sm { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
             #view-dashboard { flex-direction: column !important; overflow-y: auto !important; }
             #view-dashboard aside { width: 100% !important; height: auto !important; max-height: 190px; }
@@ -121,6 +123,11 @@
         body::before { content: '♡  🍓  ♡  🐰  ♡  🍓  ♡'; position: fixed; inset: 0 0 auto; z-index: 0; height: 30px; padding: 5px 24px; color: #ef9bbb; background: #fff0f6; letter-spacing: 18px; font-size: 13px; pointer-events: none; }
         nav { margin-top: 30px; background: #ffffff !important; border-bottom: 2px solid var(--line) !important; box-shadow: 0 5px 18px rgba(232,95,145,.12) !important; color: #17131a !important; }
         nav span, nav .text-white, nav .text-discord-text, nav .text-discord-muted { color: #17131a !important; }
+        .header-navigation { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 13px; padding: 5px 14px; border: 1px solid #f4bfd5; border-radius: 999px; background: #fff5f9; box-shadow: 0 4px 12px rgba(232,95,145,.10); }
+        .header-navigation.hidden { display: none !important; }
+        .header-navigation button { border: 0; background: transparent; color: #806070; font-size: .78rem; font-weight: 800; letter-spacing: .12em; cursor: pointer; transition: color .2s ease, transform .2s ease; }
+        .header-navigation button:hover { color: #e85f91; transform: translateY(-1px); }
+        .header-divider { color: #efb3c9; font-weight: 800; }
         main, #view-login, #view-servers, #view-dashboard, #view-dashboard > div:last-child { background: #fffafd !important; color: #17131a !important; }
         aside { background: #fff0f6 !important; border-color: var(--line) !important; }
         aside .bg-gray-700\/50, aside .dashboard-tab.bg-gray-700\/50 { background: #f8c9dc !important; color: #17131a !important; box-shadow: inset 4px 0 #e85f91; }
@@ -204,6 +211,11 @@
         <div class="flex items-center gap-3">
             <img src="Yachiyo" class="w-8 h-8 rounded-full object-cover border border-gray-700 shadow-lg" alt="Yachiyo logo">
             <span class="font-bold text-lg text-white">Yachiyo App</span>
+        </div>
+        <div id="header-navigation" class="header-navigation hidden" aria-label="Main navigation">
+            <button id="header-servers-button" onclick="openServersFromHeader()">SERVERS</button>
+            <span class="header-divider">|</span>
+            <button id="header-backup-button" onclick="openBackupAllFromHeader()">BACK UP ALL</button>
         </div>
         <div class="ml-auto flex items-center gap-4 hidden" id="user-profile">
             <span class="text-sm font-medium text-discord-text" id="display-user-id">Admin</span>
@@ -590,6 +602,7 @@
                     onAuthStateChanged(auth, async (user) => {
                         if (user) {
                             currentUser = user;
+                            document.getElementById('header-navigation').classList.remove('hidden');
                             
                             try {
                                 const response = await fetch('https://discord.com/api/users/@me', {
@@ -643,6 +656,7 @@
                 sessionStorage.removeItem('yachiyo_discord_refresh_token');
                 sessionStorage.removeItem('yachiyo_discord_token_expires_at');
                 document.getElementById('user-profile').classList.add('hidden');
+                document.getElementById('header-navigation').classList.add('hidden');
                 showView('login');
             }
         }
@@ -897,6 +911,14 @@
                 if (tabId === 'checklist') loadSetupChecklist();
                 if (tabId === 'audit-viewer') loadAuditLogs();
             }
+        };
+
+        window.openServersFromHeader = () => showView('servers');
+        window.openBackupAllFromHeader = () => {
+            document.getElementById('active-server-name').textContent = 'All Servers';
+            document.getElementById('active-server-icon').innerHTML = '<span style="font-size:24px">🍓</span>';
+            showView('dashboard');
+            switchTab('backup-all');
         };
 
         function renderAllCommands() {
