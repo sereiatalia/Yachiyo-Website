@@ -1152,7 +1152,7 @@
                     checks.push(validation);
                 }
                 const total = checks.reduce((sum, item) => sum + (item.totalRecords || 0), 0);
-                if (!confirm(`${backups.length} server backups validated (${total} total records).\n\nImporting will replace existing records for these servers. Continue?`)) return;
+                if (!confirm(`${backups.length} server backups validated (${total} total records).\n\nImporting will replace existing records for these servers. Continue?`)) { document.getElementById('import-progress-panel')?.remove(); return; }
                 for (let index = 0; index < backups.length; index++) {
                     const backup = backups[index];
                     updateImportProgress(50 + (index / backups.length) * 50, `Importing server ${index + 1} of ${backups.length}`);
