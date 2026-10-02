@@ -466,7 +466,7 @@
                                     <button onclick="downloadAllBackups()" class="bg-discord-blurple hover:bg-indigo-600 text-white px-4 py-2 rounded-[3px] font-medium"><i class="fa-solid fa-box-archive mr-2"></i>Download All Servers</button>
                                     <button onclick="document.getElementById('import-all-backups-input').click()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-[3px] font-medium"><i class="fa-solid fa-file-import mr-2"></i>Import All Servers</button>
                                     <input id="import-backup-input" type="file" accept="application/json" class="hidden" onchange="importServerData(event)">
-                                    <input id="import-all-backups-input" type="file" accept=".zip,application/zip" class="hidden" onchange="importAllBackups(event)">
+                                    <input id="import-all-backups-input" type="file" accept=".zip,application/zip,.json,application/json" multiple class="hidden" onchange="importAllBackups(event)">
                                 </div>
                                 <div class="rounded bg-gray-900/60 p-4 text-sm text-discord-muted space-y-2">
                                     <p><strong class="text-white">Export:</strong> downloads this server’s settings, counters, profiles, logs, panels, tickets, and other stored records as JSON.</p>
@@ -1128,12 +1128,19 @@
         }
 
         window.importAllBackups = async (event) => {
-            const file = event.target.files?.[0]; event.target.value = '';
+            const selectedFiles = [...(event.target.files || [])];
+            const file = selectedFiles[0]; event.target.value = '';
             if (!file || !discordAccessToken) return;
             try {
-                const zip = await JSZip.loadAsync(file), files = Object.values(zip.files).filter(entry => !entry.dir && /^servers\/\d+\.json$/.test(entry.name));
-                if (!files.length) throw new Error('This ZIP does not contain Yachiyo server backups.');
-                const backups = await Promise.all(files.map(async entry => JSON.parse(await entry.async('text'))));
+                let backups = [];
+                if (file.name.toLowerCase().endsWith('.zip')) {
+                    const zip = await JSZip.loadAsync(file), files = Object.values(zip.files).filter(entry => !entry.dir && /^servers\/\d+\.json$/.test(entry.name));
+                    if (!files.length) throw new Error('This ZIP does not contain Yachiyo server backups.');
+                    backups = await Promise.all(files.map(async entry => JSON.parse(await entry.async('text'))));
+                } else {
+                    backups = await Promise.all(selectedFiles.map(async item => JSON.parse(await item.text())));
+                    if (!backups.length) throw new Error('Select one or more JSON backup files, or a Yachiyo ZIP backup.');
+                }
                 const checks = [];
                 updateImportProgress(10, `Validated ${backups.length} backup${backups.length === 1 ? '' : 's'}`);
                 for (let index = 0; index < backups.length; index++) {
@@ -1155,7 +1162,7 @@
                 }
                 updateImportProgress(100, 'All servers imported');
                 showToast(`Imported ${backups.length} server backup${backups.length === 1 ? '' : 's'} successfully.`); loadSaveDataOverview();
-            } catch (error) { console.error(error); showToast(error.message, true); }
+            } catch (error) { console.error(error); document.getElementById('import-progress-panel')?.remove(); showToast(error.message, true); }
         };
 
         window.importServerData = async (event) => {
