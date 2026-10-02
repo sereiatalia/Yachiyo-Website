@@ -1114,6 +1114,18 @@
             showToast(`Downloaded ${exported.length} server backup${exported.length === 1 ? '' : 's'}.`);
         };
 
+        function updateImportProgress(percent, label) {
+            let panel = document.getElementById('import-progress-panel');
+            if (!panel) {
+                panel = document.createElement('div'); panel.id = 'import-progress-panel';
+                panel.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:80;width:min(560px,calc(100% - 32px));padding:18px 20px;border:2px solid #f4bfd5;border-radius:20px;background:#fffafd;box-shadow:0 14px 35px rgba(232,95,145,.22);';
+                document.body.appendChild(panel);
+            }
+            const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+            panel.innerHTML = `<div style="display:flex;justify-content:space-between;gap:12px;color:#17131a;font-weight:800;margin-bottom:10px"><span>🍓 ${label}</span><span>${safePercent}%</span></div><div style="height:12px;background:#ffe0ec;border-radius:999px;overflow:hidden"><div style="height:100%;width:${safePercent}%;background:linear-gradient(90deg,#e85f91,#c7a7f0,#e85f91);background-size:200% 100%;transition:width .25s ease;border-radius:inherit"></div></div>`;
+            if (safePercent >= 100) setTimeout(() => panel.remove(), 900);
+        }
+
         window.importAllBackups = async (event) => {
             const file = event.target.files?.[0]; event.target.value = '';
             if (!file || !discordAccessToken) return;
@@ -1122,7 +1134,10 @@
                 if (!files.length) throw new Error('This ZIP does not contain Yachiyo server backups.');
                 const backups = await Promise.all(files.map(async entry => JSON.parse(await entry.async('text'))));
                 const checks = [];
-                for (const backup of backups) {
+                updateImportProgress(10, `Validated ${backups.length} backup${backups.length === 1 ? '' : 's'}`);
+                for (let index = 0; index < backups.length; index++) {
+                    const backup = backups[index];
+                    updateImportProgress(10 + (index / backups.length) * 40, `Validating server ${index + 1} of ${backups.length}`);
                     const validationResponse = await fetch(`${BOT_API_URL}/api/guilds/${backup.guildId}/validate-import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) });
                     const validation = await validationResponse.json().catch(() => ({}));
                     if (!validationResponse.ok || !validation.valid) throw new Error(`Backup ${backup.guildId} failed validation: ${(validation.errors || []).join(' ') || validation.error || `HTTP ${validationResponse.status}`}`);
@@ -1130,11 +1145,14 @@
                 }
                 const total = checks.reduce((sum, item) => sum + (item.totalRecords || 0), 0);
                 if (!confirm(`${backups.length} server backups validated (${total} total records).\n\nImporting will replace existing records for these servers. Continue?`)) return;
-                for (const backup of backups) {
+                for (let index = 0; index < backups.length; index++) {
+                    const backup = backups[index];
+                    updateImportProgress(50 + (index / backups.length) * 50, `Importing server ${index + 1} of ${backups.length}`);
                     const response = await fetch(`${BOT_API_URL}/api/guilds/${backup.guildId}/import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) });
                     const result = await response.json().catch(() => ({}));
                     if (!response.ok) throw new Error(`Import failed for ${backup.guildId}: ${result.error || `HTTP ${response.status}`}`);
                 }
+                updateImportProgress(100, 'All servers imported');
                 showToast(`Imported ${backups.length} server backup${backups.length === 1 ? '' : 's'} successfully.`); loadSaveDataOverview();
             } catch (error) { console.error(error); showToast(error.message, true); }
         };
