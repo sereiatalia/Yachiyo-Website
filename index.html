@@ -975,17 +975,37 @@
             showView('login');
         }
 
+        function showModuleLoadError(target, message, retry) {
+            target.replaceChildren();
+            const card = document.createElement('div'); card.className = 'audit-empty';
+            const text = document.createElement('p'); text.textContent = message;
+            const button = document.createElement('button'); button.className = 'mt-3 px-4 py-2 rounded-full bg-discord-blurple text-white'; button.textContent = 'Try again'; button.onclick = retry;
+            card.append(text, button); target.append(card);
+        }
+
+        async function fetchModuleJson(url) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+            try {
+                const response = await fetch(url, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store', signal: controller.signal });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);
+                return data;
+            } catch (error) {
+                if (error.name === 'AbortError') throw new Error('The server did not respond in time. Try again.');
+                throw error;
+            } finally { clearTimeout(timeout); }
+        }
+
         async function loadLiveDashboard() {
             const target = document.getElementById('live-dashboard-data');
             if (!target || !currentServerId || !discordAccessToken) return;
             target.innerHTML = dashboardLoading('Loading server dashboard…');
             try {
-                const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/dashboard`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.error || 'Could not load live dashboard.');
+                const data = await fetchModuleJson(`${BOT_API_URL}/api/guilds/${currentServerId}/dashboard`);
                 const missing = data.yachiyo.missingPermissions;
                 target.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-3"><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Status</div><div class="text-lg font-semibold ${data.status === 'online' ? 'text-green-400' : 'text-yellow-300'}">${data.status}</div></div><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Members</div><div class="text-lg font-semibold text-white">${data.server.memberCount}</div></div><div class="rounded bg-gray-900/60 p-4"><div class="text-xs text-discord-muted">Roles</div><div class="text-lg font-semibold text-white">${data.roles.total}</div></div></div><div class="rounded bg-gray-900/60 p-4 text-sm text-gray-200"><p><strong>Channels:</strong> ${data.channels.total} total · ${data.channels.text} text · ${data.channels.voice} voice</p><p class="mt-2"><strong>Yachiyo permissions:</strong> ${data.yachiyo.permissions.length} granted</p>${missing.length ? `<p class="mt-3 text-red-300"><strong>Missing permissions:</strong> ${missing.join(', ')}</p>` : '<p class="mt-3 text-green-300">All recommended permissions are available.</p>'}</div>`;
-            } catch (error) { if (/authorization expired|authorization is required/i.test(error.message)) return forceDiscordLogin(); target.textContent = error.message; }
+            } catch (error) { if (/authorization expired|authorization is required/i.test(error.message)) return forceDiscordLogin(); showModuleLoadError(target, error.message || 'Could not load live dashboard.', loadLiveDashboard); }
         }
 
         async function loadSetupChecklist() {
@@ -993,12 +1013,10 @@
             if (!target || !currentServerId || !discordAccessToken) return;
             target.innerHTML = dashboardLoading('Checking server setup…');
             try {
-                const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/checklist`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.error || 'Could not load checklist.');
+                const data = await fetchModuleJson(`${BOT_API_URL}/api/guilds/${currentServerId}/checklist`);
                 const labels = { yachiyoOnline: 'Yachiyo is online', permissions: 'Required permissions granted', serverInfo: 'Server Info configured', rules: 'Rules configured', tickets: 'Tickets configured', introduction: 'Introduction configured', moderation: 'Moderation configured', backup: 'Firebase backup available' };
                 target.innerHTML = Object.entries(labels).map(([key, label]) => `<div class="flex items-center justify-between rounded bg-gray-900/60 px-4 py-3"><span class="text-gray-200">${label}</span><span class="${data.checks[key] ? 'text-green-400' : 'text-red-300'}">${data.checks[key] ? '✓ Ready' : 'Needs setup'}</span></div>`).join('') + (data.missingPermissions.length ? `<p class="text-sm text-red-300 mt-2">Missing permissions: ${data.missingPermissions.join(', ')}</p>` : '');
-            } catch (error) { if (/authorization expired|authorization is required/i.test(error.message)) return forceDiscordLogin(); target.textContent = error.message; }
+            } catch (error) { if (/authorization expired|authorization is required/i.test(error.message)) return forceDiscordLogin(); showModuleLoadError(target, error.message || 'Could not load checklist.', loadSetupChecklist); }
         }
 
         let auditSearchTimer;
