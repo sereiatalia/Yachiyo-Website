@@ -128,6 +128,8 @@
         .header-navigation button { border: 0; background: transparent; color: #806070; font-size: .78rem; font-weight: 800; letter-spacing: .12em; cursor: pointer; transition: color .2s ease, transform .2s ease; }
         .header-navigation button:hover { color: #e85f91; transform: translateY(-1px); }
         .header-divider { color: #efb3c9; font-weight: 800; }
+        #view-dashboard.backup-mode aside { display: none !important; }
+        #view-dashboard.backup-mode > div:last-child { width: 100% !important; }
         main, #view-login, #view-servers, #view-dashboard, #view-dashboard > div:last-child { background: #fffafd !important; color: #17131a !important; }
         aside { background: #fff0f6 !important; border-color: var(--line) !important; }
         aside .bg-gray-700\/50, aside .dashboard-tab.bg-gray-700\/50 { background: #f8c9dc !important; color: #17131a !important; box-shadow: inset 4px 0 #e85f91; }
@@ -763,6 +765,7 @@
         
         window.selectServer = async (server) => {
             currentServerId = server.id;
+            document.getElementById('view-dashboard').classList.remove('backup-mode');
             
             document.getElementById('active-server-name').textContent = server.name;
             const iconDiv = document.getElementById('active-server-icon');
@@ -915,6 +918,7 @@
 
         window.openServersFromHeader = () => showView('servers');
         window.openBackupAllFromHeader = () => {
+            document.getElementById('view-dashboard').classList.add('backup-mode');
             document.getElementById('active-server-name').textContent = 'All Servers';
             document.getElementById('active-server-icon').innerHTML = '<span style="font-size:24px">🍓</span>';
             showView('dashboard');
