@@ -106,7 +106,7 @@
         @media (max-width: 700px) {
             nav { padding-left: 14px !important; padding-right: 14px !important; }
             .header-navigation { position: static; transform: none; margin-left: auto; margin-right: 8px; gap: 7px; padding: 4px 8px; }
-            .header-navigation button { font-size: .62rem; letter-spacing: .05em; }
+            .header-navigation button { font-size: .56rem; letter-spacing: .03em; }
             nav .text-sm { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
             #view-dashboard { flex-direction: column !important; overflow-y: auto !important; }
             #view-dashboard aside { width: 100% !important; height: auto !important; max-height: 190px; }
@@ -223,6 +223,8 @@
             <button id="header-servers-button" onclick="openServersFromHeader()">SERVERS</button>
             <span class="header-divider">|</span>
             <button id="header-backup-button" onclick="openBackupAllFromHeader()">BACK UP ALL</button>
+            <span class="header-divider">|</span>
+            <button id="header-auto-redeploy-button" onclick="openAutoRedeployFromHeader()">AUTO REDEPLOY</button>
         </div>
         <div class="ml-auto flex items-center gap-4 hidden" id="user-profile">
             <span class="text-sm font-medium text-discord-text" id="display-user-id">Admin</span>
@@ -501,6 +503,17 @@
                             </div>
                         </div>
 
+                        <div id="panel-auto-redeploy" class="settings-panel p-6 hidden">
+                            <div class="backup-all-card rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
+                                <span class="audit-kicker"><i class="fa-solid fa-wand-magic-sparkles"></i> Yachiyo one-click recovery</span>
+                                <h3 class="text-xl font-semibold text-white">Auto Redeploy Saved Data</h3>
+                                <p class="text-discord-muted mt-2">Restore the latest Firebase backup for every server where you manage Yachiyo. No downloading or uploading files.</p>
+                                <div class="backup-info mt-6"><p><strong>How it works:</strong> Yachiyo checks each saved backup, saves the current server data to Firebase as a recovery point, then restores the saved backup.</p><p><strong>Heads up:</strong> restored data replaces that server’s current saved records.</p></div>
+                                <div class="mt-6"><button id="auto-redeploy-button" onclick="autoRedeployAllServers()" class="bg-discord-blurple text-white px-5 py-3 rounded-full font-semibold"><i class="fa-solid fa-rotate mr-2"></i>Auto Redeploy All Servers</button></div>
+                                <div id="auto-redeploy-progress" class="grid gap-3 mt-5" aria-live="polite"></div>
+                            </div>
+                        </div>
+
                         <div id="panel-checklist" class="settings-panel p-6 hidden">
                             <div class="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
                                 <h3 class="text-xl font-semibold text-white">Server Setup Checklist</h3>
@@ -561,7 +574,7 @@
         };
 
         const appId = 'yachiyo-dashboard-app';
-        let app, db, auth, currentUser, currentServerId, discordAccessToken, managedGuilds = [];
+        let app, db, auth, currentUser, currentServerId, discordAccessToken, managedGuilds = [], activeBotGuildIds = new Set();
 
         async function initApp() {
             try {
@@ -709,10 +722,11 @@
                 try {
                     const botGuildsRes = await fetch(`${BOT_API_URL}/api/bot/guilds`, { cache: 'no-store' });
                     if (!botGuildsRes.ok) throw new Error(`Bot API returned ${botGuildsRes.status}`);
-                    const botGuilds = await botGuildsRes.json();
-                    activeBotServers = Array.isArray(botGuilds.guilds)
-                        ? botGuilds.guilds.map(guild => String(guild.id))
-                        : [];
+                const botGuilds = await botGuildsRes.json();
+                activeBotServers = Array.isArray(botGuilds.guilds)
+                    ? botGuilds.guilds.map(guild => String(guild.id))
+                    : [];
+                activeBotGuildIds = new Set(activeBotServers);
                 } catch (apiErr) {
                     console.error("Could not fetch Yachiyo guilds from Railway:", apiErr);
                     container.innerHTML = '<p class="text-discord-red col-span-3 text-center">Yachiyo is temporarily unavailable. Please try again shortly.</p>';
@@ -880,6 +894,7 @@
             commands: { title: 'Commands', desc: 'Browse Yachiyo commands and how to use them in Discord.' },
             'save-data': { title: 'Save Data', desc: 'Export, import, and inspect this server’s saved data.' },
             'backup-all': { title: 'Back Up All Servers', desc: 'Create one complete ZIP backup for your Yachiyo servers.' },
+            'auto-redeploy': { title: 'Auto Redeploy', desc: 'Restore saved Firebase backups directly to Yachiyo.' },
             'server-info': { title: 'Server Info', desc: 'Edit the live server information panel managed by Yachiyo.' },
             'confession': { title: 'Confession Service', desc: 'Manage anonymous confessions routing and count logic.' },
             'economy': { title: 'Global Economy', desc: 'Setup server currency, starting balances, and shop toggles.' },
@@ -893,8 +908,8 @@
                 el.classList.add('text-discord-muted', 'hover:bg-gray-800');
             });
             const activeTab = document.getElementById(`tab-${tabId}`);
-            activeTab.classList.remove('text-discord-muted', 'hover:bg-gray-800');
-            activeTab.classList.add('bg-gray-700/50', 'text-white');
+            activeTab?.classList.remove('text-discord-muted', 'hover:bg-gray-800');
+            activeTab?.classList.add('bg-gray-700/50', 'text-white');
 
             document.querySelectorAll('.settings-panel').forEach(el => {
                 el.classList.add('hidden');
@@ -903,7 +918,7 @@
             const panel = document.getElementById(`panel-${tabId}`) || document.getElementById('panel-command');
             panel.classList.remove('hidden');
             const saveButton = document.getElementById('save-header-button');
-            if (saveButton) saveButton.classList.toggle('hidden', ['dashboard', 'checklist', 'audit-viewer', 'commands', 'save-data', 'backup-all'].includes(tabId));
+            if (saveButton) saveButton.classList.toggle('hidden', ['dashboard', 'checklist', 'audit-viewer', 'commands', 'save-data', 'backup-all', 'auto-redeploy'].includes(tabId));
             if (module) {
                 document.getElementById('command-panel-title').textContent = module.label;
                 document.getElementById('command-panel-description').textContent = module.description;
@@ -931,6 +946,59 @@
             document.getElementById('active-server-icon').innerHTML = '<span style="font-size:24px">🍓</span>';
             showView('dashboard');
             switchTab('backup-all');
+        };
+
+        window.openAutoRedeployFromHeader = () => {
+            document.getElementById('view-dashboard').classList.add('backup-mode');
+            document.getElementById('save-header-button')?.classList.add('hidden');
+            document.getElementById('active-server-name').textContent = 'All Servers';
+            document.getElementById('active-server-icon').innerHTML = '<span style="font-size:24px">🍓</span>';
+            showView('dashboard');
+            switchTab('auto-redeploy');
+        };
+
+        window.autoRedeployAllServers = async () => {
+            const button = document.getElementById('auto-redeploy-button');
+            const target = document.getElementById('auto-redeploy-progress');
+            const guilds = managedGuilds.filter(guild => activeBotGuildIds.has(String(guild.id)));
+            if (!discordAccessToken) return showToast('Please log in again before restoring backups.', true);
+            if (!guilds.length) return showToast('No managed servers with Yachiyo installed were found.', true);
+            if (!confirm(`Auto redeploy saved Firebase data for ${guilds.length} server${guilds.length === 1 ? '' : 's'}?\n\nEach server’s current records will first be saved as a recovery backup. Then its latest saved Firebase backup will be restored.`)) return;
+            button.disabled = true;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Working…';
+            target.innerHTML = '<div class="cute-loading"><span class="cute-loading-heart">🍓</span><div class="cute-loading-track"><div id="auto-redeploy-bar" class="cute-loading-bar" style="width:0%;transition:width .25s ease"></div></div><span id="auto-redeploy-label">Starting…</span><strong id="auto-redeploy-percent">0%</strong><span>🐰</span></div><div id="auto-redeploy-results" class="grid gap-2"></div>';
+            const results = document.getElementById('auto-redeploy-results');
+            const update = (percent, label) => { document.getElementById('auto-redeploy-bar').style.width = `${percent}%`; document.getElementById('auto-redeploy-label').textContent = label; document.getElementById('auto-redeploy-percent').textContent = `${percent}%`; };
+            let succeeded = 0;
+            try {
+                for (let index = 0; index < guilds.length; index++) {
+                    const guild = guilds[index];
+                    const percent = Math.round(index / guilds.length * 100);
+                    update(percent, `Redeploying ${guild.name} (${index + 1} of ${guilds.length})…`);
+                    const row = document.createElement('div'); row.className = 'backup-info'; row.textContent = `🍓 ${guild.name}: restoring latest Firebase snapshot…`; results.append(row);
+                    try {
+                        const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 90000);
+                        let response, payload;
+                        try {
+                            response = await fetch(`${BOT_API_URL}/api/guilds/${guild.id}/auto-redeploy`, { method: 'POST', headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store', signal: controller.signal });
+                            payload = await response.json().catch(() => ({}));
+                        } finally { clearTimeout(timeout); }
+                        if (!response.ok) throw new Error(payload.error || `Request failed (${response.status}).`);
+                        succeeded++;
+                        const count = Object.values(payload.imported || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+                        row.textContent = `✅ ${guild.name}: restored ${count} records from ${payload.sourceExportedAt ? new Date(payload.sourceExportedAt).toLocaleString() : 'Firebase'}.`;
+                    } catch (error) {
+                        row.textContent = `💗 ${guild.name}: ${error.name === 'AbortError' ? 'Request timed out.' : error.message}`;
+                    }
+                    update(Math.round((index + 1) / guilds.length * 100), `Finished ${index + 1} of ${guilds.length} servers`);
+                }
+                const failed = guilds.length - succeeded;
+                const summary = document.createElement('div'); summary.className = 'backup-info'; summary.innerHTML = `<strong>Done:</strong> ${succeeded} restored${failed ? ` · ${failed} need attention` : ''}.`; target.prepend(summary);
+                showToast(`Auto redeploy finished: ${succeeded} of ${guilds.length} servers restored.`, failed > 0);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="fa-solid fa-rotate mr-2"></i>Auto Redeploy All Servers';
+            }
         };
 
         function renderAllCommands() {
