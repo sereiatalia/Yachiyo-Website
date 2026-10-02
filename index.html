@@ -162,6 +162,12 @@
         .audit-event-meta i { color: #e85f91; margin-right: 4px; }
         .audit-event pre { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #17131a; background: #ffffff; border: 1px solid #f4d5e1; border-radius: 10px; padding: 12px; margin-top: 12px; font: .76rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
         .audit-empty { padding: 24px; text-align: center; color: #806070; background: #fff6fa; border: 1px dashed #efb3c9; border-radius: 14px; }
+        .backup-all-card { background: linear-gradient(135deg, #ffffff, #fff0f6) !important; border: 2px solid #f4bfd5 !important; box-shadow: 0 12px 30px rgba(232,95,145,.10); }
+        .backup-countdown { display: flex; align-items: center; gap: 16px; padding: 18px; border-radius: 18px; background: #ffffff; border: 1px dashed #e85f91; }
+        .backup-countdown strong { color: #17131a; }
+        .backup-bunny { margin-left: auto; font-size: 42px; animation: bunnyFloat 3s ease-in-out infinite; }
+        .backup-info { padding: 15px 18px; color: #806070; background: #fffafd; border-radius: 14px; border: 1px solid #f4d0df; line-height: 1.8; }
+        .backup-info strong { color: #d94d82; }
         /* Extra playful motion and decoration. */
         #view-servers::before, #view-dashboard::before { content: ''; position: fixed; width: 260px; height: 260px; border-radius: 50%; background: #ffe0ed; filter: blur(2px); opacity: .65; top: 110px; right: -90px; pointer-events: none; animation: bunnyFloat 7s ease-in-out infinite; }
         #view-servers::after, #view-dashboard::after { content: '🍓  ♡  🐰  ♡  🍓'; position: fixed; bottom: 22px; right: 28px; color: #e85f91; font-size: 18px; letter-spacing: 7px; opacity: .8; pointer-events: none; animation: bunnyWiggle 4s ease-in-out infinite; }
@@ -462,6 +468,17 @@
                                 <h3 class="text-xl font-semibold text-white">Live Server Dashboard</h3>
                                 <p class="text-discord-muted mt-2">Current information from Discord and Yachiyo.</p>
                                 <div id="live-dashboard-data" class="grid gap-3 mt-6"><div class="cute-loading"><span class="cute-loading-heart">🍓</span><div class="cute-loading-track"><div class="cute-loading-bar"></div></div><span>Loading server information…</span><span>🐰</span></div></div>
+                            </div>
+                        </div>
+
+                        <div id="panel-backup-all" class="settings-panel p-6 hidden">
+                            <div class="backup-all-card rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
+                                <span class="audit-kicker"><i class="fa-solid fa-box-archive"></i> Yachiyo migration center</span>
+                                <h3 class="text-xl font-semibold text-white">Back Up All Servers</h3>
+                                <p class="text-discord-muted mt-2">Download every server backup in one ZIP before moving Railway accounts or databases.</p>
+                                <div class="backup-countdown mt-6"><span class="cute-loading-heart">🍓</span><div><div class="text-xs uppercase tracking-wider text-discord-muted">Next recommended backup</div><strong id="next-backup-date">November 2, 2026 at 10:00 PM</strong><div id="backup-countdown-text" class="text-lg font-bold text-discord-blurple mt-1">Calculating…</div></div><span class="backup-bunny">🐰</span></div>
+                                <div class="flex flex-wrap gap-3 mt-6"><button onclick="downloadAllBackups()" class="bg-discord-blurple text-white px-4 py-3 rounded-full font-semibold"><i class="fa-solid fa-download mr-2"></i>Download All Servers</button><button onclick="document.getElementById('import-all-backups-input').click()" class="bg-white border-2 border-pink-200 px-4 py-3 rounded-full font-semibold"><i class="fa-solid fa-upload mr-2"></i>Import All Servers</button></div>
+                                <div class="backup-info mt-6"><p><strong>ZIP contents:</strong> one JSON backup per server plus a manifest file.</p><p><strong>Restore safety:</strong> every backup is validated before any server data is replaced.</p><p><strong>Reminder:</strong> keep the downloaded ZIP in a safe location before switching Railway accounts.</p></div>
                             </div>
                         </div>
 
@@ -838,6 +855,7 @@
             'audit-viewer': { title: 'Activity & Audit Logs', desc: 'Search recent Yachiyo activity for this server.' },
             commands: { title: 'Commands', desc: 'Browse Yachiyo commands and how to use them in Discord.' },
             'save-data': { title: 'Save Data', desc: 'Export, import, and inspect this server’s saved data.' },
+            'backup-all': { title: 'Back Up All Servers', desc: 'Create one complete ZIP backup for your Yachiyo servers.' },
             'server-info': { title: 'Server Info', desc: 'Edit the live server information panel managed by Yachiyo.' },
             'confession': { title: 'Confession Service', desc: 'Manage anonymous confessions routing and count logic.' },
             'economy': { title: 'Global Economy', desc: 'Setup server currency, starting balances, and shop toggles.' },
@@ -874,6 +892,7 @@
                 document.getElementById('panel-desc').textContent = panelData[tabId].desc;
                 if (tabId === 'commands') loadCommandGuide();
                 if (tabId === 'save-data') loadSaveDataOverview();
+                if (tabId === 'backup-all') startBackupCountdown();
                 if (tabId === 'dashboard') loadLiveDashboard();
                 if (tabId === 'checklist') loadSetupChecklist();
                 if (tabId === 'audit-viewer') loadAuditLogs();
@@ -949,6 +968,15 @@
         }
 
         let auditSearchTimer;
+        let backupCountdownTimer;
+        function startBackupCountdown() {
+            clearInterval(backupCountdownTimer);
+            const target = document.getElementById('backup-countdown-text');
+            if (!target) return;
+            const nextBackup = new Date('2026-11-02T22:00:00+08:00');
+            const update = () => { const remaining = nextBackup.getTime() - Date.now(); if (remaining <= 0) { target.textContent = 'Backup time reached — download your ZIP now.'; clearInterval(backupCountdownTimer); return; } const days = Math.floor(remaining / 86400000), hours = Math.floor(remaining % 86400000 / 3600000), minutes = Math.floor(remaining % 3600000 / 60000), seconds = Math.floor(remaining % 60000 / 1000); target.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s remaining`; };
+            update(); backupCountdownTimer = setInterval(update, 1000);
+        }
         window.loadAuditLogs = () => {
             clearTimeout(auditSearchTimer);
             auditSearchTimer = setTimeout(async () => {
@@ -1112,7 +1140,7 @@
         function setupUI() {
             const navigation = document.querySelector('aside .p-3');
             navigation.innerHTML = '<div class="text-xs font-bold text-discord-muted uppercase tracking-wider mb-2 mt-4 px-2">Server Workspace</div>';
-            [['dashboard', 'Live Dashboard', 'fa-chart-line', 'text-cyan-400'], ['checklist', 'Setup Checklist', 'fa-list-check', 'text-yellow-300'], ['audit-viewer', 'Activity Logs', 'fa-clock-rotate-left', 'text-blue-400'], ['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400']].forEach(([id, label, icon, color], index) => {
+            [['dashboard', 'Live Dashboard', 'fa-chart-line', 'text-cyan-400'], ['checklist', 'Setup Checklist', 'fa-list-check', 'text-yellow-300'], ['audit-viewer', 'Activity Logs', 'fa-clock-rotate-left', 'text-blue-400'], ['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400'], ['backup-all', 'Back Up All', 'fa-box-archive', 'text-pink-400']].forEach(([id, label, icon, color], index) => {
                 const button = document.createElement('button');
                 button.id = `tab-${id}`;
                 button.className = `dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium ${index === 0 ? 'bg-gray-700/50 text-white' : 'text-discord-muted'} hover:bg-gray-800 hover:text-discord-text transition-colors`;
