@@ -1162,7 +1162,8 @@
                 }
                 updateImportProgress(100, 'All servers imported');
                 showToast(`Imported ${backups.length} server backup${backups.length === 1 ? '' : 's'} successfully.`); loadSaveDataOverview();
-            } catch (error) { console.error(error); document.getElementById('import-progress-panel')?.remove(); showToast(error.message, true); }
+            } catch (error) { console.error(error); showToast(error.message, true); }
+            finally { document.getElementById('import-progress-panel')?.remove(); }
         };
 
         window.importServerData = async (event) => {
