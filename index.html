@@ -1002,6 +1002,7 @@
         }
 
         let auditSearchTimer;
+        let auditRequestNumber = 0;
         let backupCountdownTimer;
         function startBackupCountdown() {
             clearInterval(backupCountdownTimer);
@@ -1016,13 +1017,26 @@
             auditSearchTimer = setTimeout(async () => {
                 const target = document.getElementById('audit-log-list');
                 if (!target || !currentServerId || !discordAccessToken) return;
+                const requestNumber = ++auditRequestNumber;
+                target.innerHTML = dashboardLoading('Loading activity…');
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 15000);
                 try {
                     const search = encodeURIComponent(document.getElementById('audit-search').value.trim());
-                    const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/audit-logs?search=${search}&limit=100`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store' });
+                    const response = await fetch(`${BOT_API_URL}/api/guilds/${currentServerId}/audit-logs?search=${search}&limit=100`, { headers: { Authorization: `Bearer ${discordAccessToken}` }, cache: 'no-store', signal: controller.signal });
                     const payload = await response.json();
                     if (!response.ok) throw new Error(payload.error || 'Could not load audit logs.');
+                    if (requestNumber !== auditRequestNumber) return;
                     target.innerHTML = payload.logs?.length ? payload.logs.map(log => `<article class="audit-event"><div class="audit-event-top"><code class="audit-event-type">${log.event_type || 'activity'}</code><time>${new Date(log.created_at).toLocaleString()}</time></div><p class="audit-event-meta"><span><i class="fa-solid fa-user"></i> ${log.actor_user_id || 'system'}</span><span><i class="fa-solid fa-bullseye"></i> ${log.target_id || '—'}</span></p><pre>${JSON.stringify(log.data || {}, null, 2)}</pre></article>`).join('') : '<p class="audit-empty"><i class="fa-regular fa-heart"></i> No matching activity found.</p>';
-                } catch (error) { target.textContent = error.message; }
+                } catch (error) {
+                    if (requestNumber !== auditRequestNumber) return;
+                    const message = error.name === 'AbortError' ? 'Loading activity took too long.' : error.message;
+                    target.replaceChildren();
+                    const errorCard = document.createElement('div'); errorCard.className = 'audit-empty';
+                    const errorText = document.createElement('p'); errorText.textContent = message;
+                    const retry = document.createElement('button'); retry.className = 'mt-3 px-4 py-2 rounded-full bg-discord-blurple text-white'; retry.textContent = 'Try again'; retry.onclick = () => window.loadAuditLogs();
+                    errorCard.append(errorText, retry); target.append(errorCard);
+                } finally { clearTimeout(timeout); }
             }, 250);
         };
 
@@ -1202,7 +1216,7 @@
         function setupUI() {
             const navigation = document.querySelector('aside .p-3');
             navigation.innerHTML = '<div class="text-xs font-bold text-discord-muted uppercase tracking-wider mb-2 mt-4 px-2">Server Workspace</div>';
-            [['dashboard', 'Live Dashboard', 'fa-chart-line', 'text-cyan-400'], ['checklist', 'Setup Checklist', 'fa-list-check', 'text-yellow-300'], ['audit-viewer', 'Activity Logs', 'fa-clock-rotate-left', 'text-blue-400'], ['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400'], ['backup-all', 'Back Up All', 'fa-box-archive', 'text-pink-400']].forEach(([id, label, icon, color], index) => {
+            [['dashboard', 'Live Dashboard', 'fa-chart-line', 'text-cyan-400'], ['checklist', 'Setup Checklist', 'fa-list-check', 'text-yellow-300'], ['audit-viewer', 'Activity Logs', 'fa-clock-rotate-left', 'text-blue-400'], ['commands', 'Commands', 'fa-terminal', 'text-discord-blurple'], ['save-data', 'Save Data', 'fa-database', 'text-green-400']].forEach(([id, label, icon, color], index) => {
                 const button = document.createElement('button');
                 button.id = `tab-${id}`;
                 button.className = `dashboard-tab w-full flex items-center gap-3 px-3 py-2 rounded text-sm font-medium ${index === 0 ? 'bg-gray-700/50 text-white' : 'text-discord-muted'} hover:bg-gray-800 hover:text-discord-text transition-colors`;
