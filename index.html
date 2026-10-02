@@ -173,6 +173,10 @@
         .audit-event pre { max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #17131a; background: #ffffff; border: 1px solid #f4d5e1; border-radius: 10px; padding: 12px; margin-top: 12px; font: .76rem/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }
         .audit-empty { padding: 24px; text-align: center; color: #806070; background: #fff6fa; border: 1px dashed #efb3c9; border-radius: 14px; }
         .backup-all-card { background: linear-gradient(135deg, #ffffff, #fff0f6) !important; border: 2px solid #f4bfd5 !important; box-shadow: 0 12px 30px rgba(232,95,145,.10); }
+        .backup-mode .backup-all-card { text-align: center; max-width: 900px; margin: 0 auto; }
+        .backup-mode .backup-countdown { justify-content: center; text-align: left; max-width: 680px; margin-left: auto; margin-right: auto; }
+        .backup-mode .backup-all-card .flex.flex-wrap { justify-content: center; }
+        .backup-mode .backup-info { max-width: 760px; margin-left: auto; margin-right: auto; text-align: left; }
         .backup-countdown { display: flex; align-items: center; gap: 16px; padding: 18px; border-radius: 18px; background: #ffffff; border: 1px dashed #e85f91; }
         .backup-countdown strong { color: #17131a; }
         .backup-bunny { margin-left: auto; font-size: 42px; animation: bunnyFloat 3s ease-in-out infinite; }
@@ -898,7 +902,7 @@
             const panel = document.getElementById(`panel-${tabId}`) || document.getElementById('panel-command');
             panel.classList.remove('hidden');
             const saveButton = document.getElementById('save-header-button');
-            if (saveButton) saveButton.classList.toggle('hidden', ['dashboard', 'checklist', 'audit-viewer', 'commands', 'save-data'].includes(tabId));
+            if (saveButton) saveButton.classList.toggle('hidden', ['dashboard', 'checklist', 'audit-viewer', 'commands', 'save-data', 'backup-all'].includes(tabId));
             if (module) {
                 document.getElementById('command-panel-title').textContent = module.label;
                 document.getElementById('command-panel-description').textContent = module.description;
