@@ -655,17 +655,18 @@
         };
 
         window.logout = async () => {
-            if (auth) {
-                await signOut(auth);
-                currentUser = null;
-                discordAccessToken = null;
-                sessionStorage.removeItem('yachiyo_discord_access_token');
-                sessionStorage.removeItem('yachiyo_discord_refresh_token');
-                sessionStorage.removeItem('yachiyo_discord_token_expires_at');
-                document.getElementById('user-profile').classList.add('hidden');
-                document.getElementById('header-navigation').classList.add('hidden');
-                showView('login');
-            }
+            try { if (auth) await signOut(auth); } catch (error) { console.warn('Firebase sign-out failed:', error); }
+            currentUser = null;
+            discordAccessToken = null;
+            currentServerId = null;
+            managedGuilds = [];
+            sessionStorage.removeItem('yachiyo_discord_access_token');
+            sessionStorage.removeItem('yachiyo_discord_refresh_token');
+            sessionStorage.removeItem('yachiyo_discord_token_expires_at');
+            document.getElementById('server-list').replaceChildren();
+            document.getElementById('user-profile').classList.add('hidden');
+            document.getElementById('header-navigation').classList.add('hidden');
+            showView('login');
         }
 
         window.showView = (viewName) => {
