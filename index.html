@@ -1123,15 +1123,17 @@
                 const backups = await Promise.all(files.map(async entry => JSON.parse(await entry.async('text'))));
                 const checks = [];
                 for (const backup of backups) {
-                    const validation = await fetch(`${BOT_API_URL}/api/guilds/${backup.guildId}/validate-import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) }).then(response => response.json());
-                    if (!validation.valid) throw new Error(`Backup ${backup.guildId} failed validation: ${(validation.errors || []).join(' ')}`);
+                    const validationResponse = await fetch(`${BOT_API_URL}/api/guilds/${backup.guildId}/validate-import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) });
+                    const validation = await validationResponse.json().catch(() => ({}));
+                    if (!validationResponse.ok || !validation.valid) throw new Error(`Backup ${backup.guildId} failed validation: ${(validation.errors || []).join(' ') || validation.error || `HTTP ${validationResponse.status}`}`);
                     checks.push(validation);
                 }
                 const total = checks.reduce((sum, item) => sum + (item.totalRecords || 0), 0);
                 if (!confirm(`${backups.length} server backups validated (${total} total records).\n\nImporting will replace existing records for these servers. Continue?`)) return;
                 for (const backup of backups) {
                     const response = await fetch(`${BOT_API_URL}/api/guilds/${backup.guildId}/import`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${discordAccessToken}` }, body: JSON.stringify(backup) });
-                    const result = await response.json(); if (!response.ok) throw new Error(result.error || `Import failed for ${backup.guildId}.`);
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(`Import failed for ${backup.guildId}: ${result.error || `HTTP ${response.status}`}`);
                 }
                 showToast(`Imported ${backups.length} server backup${backups.length === 1 ? '' : 's'} successfully.`); loadSaveDataOverview();
             } catch (error) { console.error(error); showToast(error.message, true); }
